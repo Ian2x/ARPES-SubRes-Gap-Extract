@@ -65,7 +65,7 @@ im = first_plot.imshow(Z, cmap=plt.cm.RdBu, aspect='auto', extent=[min(k), max(k
 plt.colorbar(im)
 plt.xlabel('k ($A^{-1}$)')
 plt.ylabel('w (mev)')
-# /Users/ianhu/PycharmProjects/ARPES 2
+# /Users/ianhu/PycharmProjects/ARPES-SubRes-Gap-Extract
 # np.savetxt("/Users/ianhu/Documents/ARPES CNN/Dataset 1 - c=-1000, sigma=15/"+str(round(dk,6))+".csv", Z, delimiter=",")
 
 plt_index=2 # first plot is for spectrum
