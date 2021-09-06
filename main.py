@@ -3,17 +3,18 @@
 ##################################################
 import scipy.optimize
 import scipy.integrate
+# binding energy dependent line width --> fading
+# secondary electrons --> soup (DOS*factor+spectral function)*fermi function, convolve, poisson
 
 from kf_from_norm_state import *
 ##################################################
 # Z HEAT MAP INFO
 ##################################################
 
-print("kf:", kf)
+print("kf:", kf, "| index:", k_as_index(kf))
 print("energy_conv_sigma:", energy_conv_sigma)
 print("dk:", dk)
 print("T:", T)
-print(k_as_index(kf))
 
 ##################################################
 # EXTRACT GAP - TRAJECTORY V2
@@ -62,6 +63,8 @@ plt.figure(figsize=(6 * num_plots, 6), dpi=120)
 first_plot = plt.subplot(1, num_plots, 1)
 first_plot.set_title("Spectrum (dk=" + str(dk)+")")
 im = first_plot.imshow(Z, cmap=plt.cm.RdBu, aspect='auto', extent=[min(k), max(k), min(w), max(w)], origin='lower')  # drawing the function
+# im = first_plot.imshow(Z, cmap=plt.cm.RdBu, aspect='auto', extent=[temp_k[690-width_offset-1], temp_k[690-width_offset-exp_width-1], temp_w[401-height_offset-exp_height-1], temp_w[401-height_offset-1]])
+
 plt.colorbar(im)
 plt.xlabel('k ($A^{-1}$)')
 plt.ylabel('w (mev)')
@@ -69,8 +72,36 @@ plt.ylabel('w (mev)')
 # np.savetxt("/Users/ianhu/Documents/ARPES CNN/Dataset 1 - c=-1000, sigma=15/"+str(round(dk,6))+".csv", Z, delimiter=",")
 
 plt_index=2 # first plot is for spectrum
-
+'''
 for slice_k_index in short_k:
+
+    # ===== ===== ===== symmetrization testing ===== ===== ===== 
+    if slice_k_index==k_as_index(kf):
+        symmetrized_slice = np.zeros(z_height*2)
+        symmetrized_w = np.zeros(z_height*2)
+        for i in range(z_height):
+            print('===')
+            print(w[i])
+            print(Z[i][slice_k_index])
+            print(n(w[i]))
+            symmetrized_slice[i] = Z[i][slice_k_index]# / n(w[i])
+            symmetrized_w[i] = w[i]
+        for i in range(z_height):
+            symmetrized_slice[z_height+i] = Z[i][slice_k_index]# / n(w[i])
+            symmetrized_w[z_height+i] = -w[i]
+        # zipped_pairs = zip(symmetrized_w, symmetrized_slice)
+
+        # symmetrized_slice = [x for _, x in sorted(zipped_pairs)]
+        # symmetrized_w.sort()
+
+    plt.plot(symmetrized_w, symmetrized_slice)
+    plt.show()
+    for i in range (z_height*2):
+        print(symmetrized_w[i])
+        print(symmetrized_slice[i])
+    quit()
+    # ===== ===== ===== ===== ===== 
+    
     Norman_subplot = plt.subplot(1, num_plots, plt_index)
     plt_index+=1
     print('==============================================')
@@ -152,7 +183,7 @@ for slice_k_index in short_k:
     plt.plot(w, EDC, label='Data')
 
     # ===== ===== ===== LMFIT ===== ===== =====
-    '''
+    
     pars = lmfit.Parameters()
 
     pars.add('scale', value=last_scale, min=scaleup_factor / 10, max=scaleup_factor * 10)
@@ -198,9 +229,9 @@ for slice_k_index in short_k:
 
     # lmfit plot
     plt.plot(w, fit_func_w_dk_scale_T(w, lmfit_scale, lmfit_T, lmfit_dk), label='lmfit')
-    '''
+    
+    
     # plot
-
     Norman_subplot.set_title("k ($A^{-1}$): " + str(round(k[slice_k_index], 3)) + " | dk estimate:" + str(round(last_dk, 2)))
     plt.vlines(w[fit_start_index], 0, min_fit_count, color='black')
     plt.vlines(w[fit_end_index], 0, min_fit_count, color='black')
@@ -222,6 +253,146 @@ for slice_k_index in short_k:
         low_noise_slice, fit_func_w_scale_T_dk(low_noise_w, scaleup_factor / w_step, T, dk), \
         low_noise_slice, points_in_fit - 3))
     easy_print_array.append(scipy.stats.f.cdf(scipy_f_stat, 3-2, points_in_fit-3))
+'''
+
+curr_index = k_as_index(kf)+1 # +1 is to account for -1 at start
+gap_estimates = np.zeros(k_as_index(kf)+1)
+for i in range(3):
+    curr_index -= 1
+    if (curr_index < 0): break
+    print('==============================================')
+    print('slice_k_index: ' + str(curr_index) + ' (' + str(k[curr_index]) + ')')
+    EDC = np.zeros(z_height)
+    curr_k = k[curr_index]
+
+    # IGNORE NOISY DATA
+    fit_start_index = -1
+    fit_end_index = -1
+
+    for i in range(z_height):
+        EDC[i] = Z[i][curr_index]
+        if fit_start_index == -1:
+            if EDC[i] >= min_fit_count:
+                fit_start_index = i
+        if EDC[i] >= min_fit_count:
+            fit_end_index = i
+
+    # SUFFICIENT ROOM FOR ENERGY CONV
+    min_indexes_from_edge = 3 * energy_conv_sigma / w_step
+    fit_start_index = int(max(fit_start_index, round(min_indexes_from_edge)))
+    fit_end_index = int(min(fit_end_index, round(z_height - 1 - min_indexes_from_edge)))
+    points_in_fit = fit_end_index - fit_start_index + 1  # include end point
+    # print("points in fit: ", points_in_fit)
+
+    # LOW NOISE SLICE CREATION
+    low_noise_slice = np.zeros(points_in_fit)
+    low_noise_w = np.zeros(points_in_fit)
+    for i in range(points_in_fit):
+        low_noise_slice[i]=Z[i+fit_start_index][curr_index]
+        low_noise_w[i] = w[i + fit_start_index]
+
+    # FUNCTION TO FIT (default, no gap, no a+c)
+    fit_func_w_scale_T_dk = partial(spectrum_slice_array, a=a, c=c, fixed_k=curr_k)
+    fit_func_w_scale_T = partial(spectrum_slice_array, dk = 0, a=a, c=c, fixed_k=curr_k)
+
+    nofe_fit_func_w_scale_T_dk = partial(spectrum_slice_array, a=extracted_a, c=extracted_c, fixed_k=curr_k)
+
+    # ===== ===== ===== SCIPY ===== ===== =====
+    # print(low_noise_slice)
+
+    scipy_full_params, scipy_full_pcov = scipy.optimize.curve_fit(fit_func_w_scale_T_dk,
+            low_noise_w, low_noise_slice, p0=[last_scale, last_T, last_dk], maxfev=2000,
+            bounds=([scaleup_factor / 10, 0., 0.], [scaleup_factor * 10, 50., 50.]),
+            sigma=np.sqrt(low_noise_slice))
+    scipy_red_params, scipy_red_pcov = scipy.optimize.curve_fit(fit_func_w_scale_T, low_noise_w,
+            low_noise_slice, p0=[last_scale, last_T], maxfev=2000, bounds=([scaleup_factor / 10, 0.],
+            [scaleup_factor * 10, 50.]), sigma=np.sqrt(low_noise_slice))
+
+    nofe_scipy_full_params, nofe_scipy_full_pcov = scipy.optimize.curve_fit(nofe_fit_func_w_scale_T_dk,
+            low_noise_w, low_noise_slice, p0=[last_scale, last_T, last_dk], maxfev=2000,
+            bounds=([scaleup_factor / 10, 0., 0.], [scaleup_factor * 10, 50., 50.]), sigma=np.sqrt(low_noise_slice))
+
+    last_scale = nofe_scipy_full_params[0]
+    last_T = nofe_scipy_full_params[1]
+    last_dk = nofe_scipy_full_params[2]
+    print("calculated dk (nofe):", last_dk)
+    print("cheated dk (fe):", scipy_full_params[2])
+
+    gap_estimates[curr_index] = last_dk
+
+    # COMPARE GAP SIZE ESTIMATE TO NUMBER OF SLICES SUGGESTED
+    curr_dk_guess = sum(gap_estimates) / (k_as_index(kf)-curr_index+1)
+    curr_k_start_suggestion = math.sqrt((-2*curr_dk_guess-extracted_c)/extracted_a)
+
+while (curr_k_start_suggestion < k[curr_index]):
+    curr_index-=1
+    if(curr_index<0): break
+    print('==============================================')
+    curr_k = k[curr_index]
+    print('slice_k_index: ' + str(curr_index) + ' (' + str(curr_k) + ')')
+    EDC = np.zeros(z_height)
+
+    # IGNORE NOISY DATA
+    fit_start_index = -1
+    fit_end_index = -1
+
+    for i in range(z_height):
+        EDC[i] = Z[i][curr_index]
+        if fit_start_index == -1:
+            if EDC[i] >= min_fit_count:
+                fit_start_index = i
+        if EDC[i] >= min_fit_count:
+            fit_end_index = i
+
+    # SUFFICIENT ROOM FOR ENERGY CONV
+    min_indexes_from_edge = 3 * energy_conv_sigma / w_step
+    fit_start_index = int(max(fit_start_index, round(min_indexes_from_edge)))
+    fit_end_index = int(min(fit_end_index, round(z_height - 1 - min_indexes_from_edge)))
+    points_in_fit = fit_end_index - fit_start_index + 1  # include end point
+
+    # LOW NOISE SLICE CREATION
+    low_noise_slice = np.zeros(points_in_fit)
+    low_noise_w = np.zeros(points_in_fit)
+    for i in range(points_in_fit):
+        low_noise_slice[i] = Z[i + fit_start_index][curr_index]
+        low_noise_w[i] = w[i + fit_start_index]
+
+    # FUNCTION TO FIT (default, no gap, no a+c)
+    fit_func_w_scale_T_dk = partial(spectrum_slice_array, a=a, c=c, fixed_k=curr_k)
+    fit_func_w_scale_T = partial(spectrum_slice_array, dk=0, a=a, c=c, fixed_k=curr_k)
+
+    nofe_fit_func_w_scale_T_dk = partial(spectrum_slice_array, a=extracted_a, c=extracted_c, fixed_k=curr_k)
+
+    # ===== ===== ===== SCIPY ===== ===== =====
+    scipy_full_params, scipy_full_pcov = scipy.optimize.curve_fit(fit_func_w_scale_T_dk, low_noise_w,
+                low_noise_slice, p0=[last_scale, last_T, last_dk], maxfev=2000,
+                bounds=([scaleup_factor / 10, 0., 0.], [scaleup_factor * 10, 50., 50.]),
+                sigma=np.sqrt(low_noise_slice))
+    scipy_red_params, scipy_red_pcov = scipy.optimize.curve_fit(fit_func_w_scale_T, low_noise_w, low_noise_slice,
+                p0=[last_scale, last_T], maxfev=2000,
+                bounds=([scaleup_factor / 10, 0.], [scaleup_factor * 10, 50.]), sigma=np.sqrt(low_noise_slice))
+
+    nofe_scipy_full_params, nofe_scipy_full_pcov = scipy.optimize.curve_fit(nofe_fit_func_w_scale_T_dk, low_noise_w,
+                low_noise_slice, p0=[last_scale, last_T, last_dk], maxfev=2000,
+                bounds=([scaleup_factor / 10, 0., 0.], [scaleup_factor * 10, 50., 50.]), sigma=np.sqrt(low_noise_slice))
+
+    last_scale = nofe_scipy_full_params[0]
+    last_T = nofe_scipy_full_params[1]
+    last_dk = nofe_scipy_full_params[2]
+    print(last_dk)
+
+    gap_estimates[curr_index] = last_dk
+
+    # COMPARE GAP SIZE ESTIMATE TO NUMBER OF SLICES SUGGESTED
+    curr_dk_guess = sum(gap_estimates) / (k_as_index(kf) - curr_index + 1)
+    curr_k_start_suggestion = math.sqrt((-2 * curr_dk_guess - extracted_c) / extracted_a)
+
+print("final k index: ", curr_index)
+print(gap_estimates)
+print(curr_dk_guess)
+
+
+
 
 ##################################################
 # SHOW PLOT

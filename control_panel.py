@@ -3,9 +3,9 @@ import random
 # CONTROL PANEL
 ##################################################
 
-energy_conv_sigma = 15 # 0.0001  # 4 mev (2-5 to 10-20) 2.5?, 7.5?, and _?
 # noise_percentage = 0.02 # typically 1-3%
-dk = 2 # random.uniform(0,40)# 10 # 0-40 mev
+dk = 8 # random.uniform(0,40)# 10 # 0-40 mev
+energy_conv_sigma = 1.5 * dk # 0.0001  # 4 mev (2-5 to 10-20) 2.5?, 7.5?, and _?
 min_fit_count = 25
 scaleup_factor = 20100
 

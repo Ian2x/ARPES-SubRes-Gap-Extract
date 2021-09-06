@@ -4,25 +4,24 @@ from functools import *
 ##################################################
 # DISPERSION FUNCTIONS
 ##################################################
-
 # normal-state dispersion
 lattice_a = 4 # 2-5 angstrom (mainly 3.6-4.2)
 brillouin_k = math.pi / lattice_a # angstrom || # hbar * math.pi / lattice_a # g*m/s
-fermi_k = 0.5092958179 * brillouin_k # 0.5092958179 for 1000
+fermi_k = 0.5092958179 * brillouin_k # 0.5092958179
 # overwrite fermi_k
 fermi_k = 0.4
 
 c = -1000 # min(-50*dk, -50) # -1000 to -10,000 mev
 a = -c / (fermi_k ** 2) # controlled by lattice_a and c
 
-print("c, a:",c, a)
+# print("c, a:",c, a)
 
 # fermi momentum
 kf = fermi_k # math.fabs(c/a) ** 0.5
 
 # ------------------------------------------------
 w_step = 1.5
-w = np.arange(-115, 50, w_step)
+w = np.arange(-140, 50, w_step)
 
 # w: (-45, 20), k: (-0.0125, 0.125)
 # w: (-100, 40), k: (-0.03, 0.025)
