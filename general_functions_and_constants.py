@@ -74,6 +74,8 @@ def add_noise(map, scaleup=scaleup_factor): # counts typically from 200 to 1000 
     for i in range(height):
         for j in range(width):
 
+            map[i][j] = np.random.poisson(map[i][j])
+            '''
             if map[i][j] < 1:
                 map[i][j] = 1
             else:
@@ -84,16 +86,15 @@ def add_noise(map, scaleup=scaleup_factor): # counts typically from 200 to 1000 
             # ensure no 0's for error sigma (for fitting)
             if map[i][j] < 1:
                 map[i][j] = 1
-
+            '''
 
             # Gaussian noise: map[i][j] += noise_percentage * random.gauss(0, math.sqrt(map[i][j]))
     return
 
 # fermi-dirac function
-def n(w, temp=60):
+def n(w, uP=0, temp=60):
     kB = 8.617 * 10 ** (-2)  # Boltzmann's constant (mev/K)
     # h-bar: 6.582 * 10 ** (-13) (mev*s) # implicit bc already expressing energy
-    uP = 0
     # if w > 150: return 0
     # if w < -150: return 1
     return 1 / (math.exp((w - uP)/kB/temp) + 1)

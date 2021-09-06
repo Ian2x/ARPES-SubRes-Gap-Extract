@@ -1,11 +1,7 @@
-from gold_reference import *
+from real_data import *
 
 norm_state_Z = norm_state_I(X,Y)
 add_noise(norm_state_Z)
-
-im = plt.imshow(norm_state_Z, cmap=plt.cm.RdBu, aspect='auto', extent=[min(k), max(k), min(w), max(w)], origin='lower')  # drawing the function
-plt.colorbar(im)
-plt.show()
 
 # find a, c from trajectory
 trajectory = np.zeros(z_width)
@@ -48,12 +44,12 @@ for slice_k_index in range(z_width):
 
     scipy_nofe_params, scipy_nofe_pcov = scipy.optimize.curve_fit(lorentz_form, norm_state_low_noise_w, norm_state_low_noise_slice, maxfev=3000)
 
-    # a is amplitude scale, b is position, c is width
+    # a is amplitude scale, b is position, c is width | stop if amplitude is much smaller than that far from fermi
     if slice_k_index<3:
         lorentz_scale_array[slice_k_index] = scipy_nofe_params[0]
     elif (scipy_nofe_params[0] < 0.95 * np.average(lorentz_scale_array)):
         fermi_energy_extraction_stop = slice_k_index
-        print("ending at:",slice_k_index)
+        print("fe extraction ending at:",slice_k_index)
         break
 
     # add to trajectory
@@ -70,7 +66,16 @@ for i in range(fermi_energy_extraction_stop):
 
 scipy_trajectory_params, scipy_trajectory_pcov = scipy.optimize.curve_fit(e, reduced_k, reduced_trajectory)
 
-print(scipy_trajectory_params)
+print("extracted a:", scipy_trajectory_params[0], "extracted c:", scipy_trajectory_params[1])
+print("true a:", a, "| true c:", c, "\n")
 
 extracted_a = scipy_trajectory_params[0]
 extracted_c = scipy_trajectory_params[1]
+
+im = plt.imshow(norm_state_Z, cmap=plt.cm.RdBu, aspect='auto', extent=[min(k), max(k), min(w), max(w)], origin='lower')  # drawing the function
+plt.colorbar(im)
+plt.plot(reduced_k, e(reduced_k,a,c))
+plt.plot(reduced_k, reduced_trajectory)
+plt.title("Norm State Fit for a,c")
+plt.show()
+
