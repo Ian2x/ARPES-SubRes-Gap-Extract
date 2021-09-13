@@ -1,8 +1,3 @@
-import matplotlib.pyplot as plt
-import lmfit
-import scipy.optimize
-import scipy.integrate
-
 from heat_map_setup import *
 
 # 7.91621939e+01 1.34835884e+02 9.99062365e+02 6.46765425e+00

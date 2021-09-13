@@ -12,8 +12,6 @@ if(trajectory.size<=10):
 lorentz_scale_array=np.zeros(3)
 fermi_energy_extraction_stop=0
 
-temp = 0
-
 for slice_k_index in range(z_width):
     norm_state_EDC = np.zeros(z_height)
 
@@ -54,8 +52,6 @@ for slice_k_index in range(z_width):
 
     # add to trajectory
     trajectory[slice_k_index] = scipy_nofe_params[1]
-
-    temp+=1
 
 reduced_k = np.zeros(fermi_energy_extraction_stop)
 reduced_trajectory = np.zeros(fermi_energy_extraction_stop)
