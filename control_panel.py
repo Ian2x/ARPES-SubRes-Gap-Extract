@@ -1,18 +1,23 @@
 import random
+
 ##################################################
 # CONTROL PANEL
 ##################################################
 
-# noise_percentage = 0.02 # typically 1-3%
-dk = 1 # random.uniform(0,40)# 10 # 0-40 mev
-energy_conv_sigma = 2.5 # 0.0001  # 4 mev (2-5 to 10-20) 2.5?, 7.5?, and _?
-min_fit_count = 25
+# [Gap Size]: typically 0-40 meV
+dk = 5
 
-# linewidth broadening due to the finite lifetime of photoholes
-T = 5 # 22mev? (5-10mev)x
+# [Energy Resolution]: typically 2-50 meV
+energy_conv_sigma = 2
 
+# [Minimum electron count to fit]: ignore noisy data with counts lower than this value
+min_fit_count = 4
+
+# [Single-particle scattering rate]: manifests as line-width broadening; typically 5-15 meV
+T = 5
+
+# [Electron count scale-up factor]: scales count size; roughly considers broadening effects (energy_conv_sigma and T)
 scaleup_factor = 200 * (energy_conv_sigma + T)
-
 
 # 1, 2.5, 5 and 44, 54, 15
 

@@ -1,77 +1,38 @@
 from real_data import *
 
-norm_state_Z = norm_state_I(X,Y)
-add_noise(norm_state_Z)
+##################################################
+# EXTRACT KF FROM MDC AT EF
+##################################################
 
-# find a, c from trajectory
-trajectory = np.zeros(z_width)
+fermi_mdc = np.zeros(z_width)
+ef_index = w_as_index(0, w)
 
-if(trajectory.size<=10):
-    raise RuntimeError('k width is too small')
+print(ef_index)
+print(w)
 
-lorentz_scale_array=np.zeros(3)
-fermi_energy_extraction_stop=0
+for i in range(z_width):
+    fermi_mdc[i] = Z[z_height-ef_index-1][i]
+    print(Z[ef_index][i])
 
-for slice_k_index in range(z_width):
-    norm_state_EDC = np.zeros(z_height)
 
-    # IGNORE NOISY DATA
-    norm_state_fit_start_index=-1
-    norm_state_fit_end_index=-1
+# Dirac delta function
+def dirac_delta(x, a, scale, hori_shift, vert_shift):
+    return scale * math.e ** (- (((x - hori_shift) / a) ** 2)) + vert_shift
 
-    for i in range(z_height):
-        norm_state_EDC[i] = norm_state_Z[i][slice_k_index]
-        if norm_state_fit_start_index == -1:
-            if norm_state_EDC[i] >= min_fit_count:
-                norm_state_fit_start_index = i
-        if norm_state_EDC[i] >= min_fit_count:
-            norm_state_fit_end_index = i
 
-    # SUFFICIENT ROOM FOR ENERGY CONV
-    min_indexes_from_edge = 3 * energy_conv_sigma / w_step
-    norm_state_fit_start_index = int(max(norm_state_fit_start_index, round(min_indexes_from_edge)))
-    norm_state_fit_end_index = int(min(norm_state_fit_end_index, round(z_height - 1 - min_indexes_from_edge)))
-    norm_state_points_in_fit = norm_state_fit_end_index - norm_state_fit_start_index + 1  # include end point
+dirac_delta_vectorized = np.vectorize(dirac_delta)
 
-    # LOW NOISE SLICE CREATION
-    norm_state_low_noise_slice = np.zeros(norm_state_points_in_fit)
-    norm_state_low_noise_w = np.zeros(norm_state_points_in_fit)
-    for i in range(norm_state_points_in_fit):
-        norm_state_low_noise_slice[i] = norm_state_Z[i + norm_state_fit_start_index][slice_k_index]
-        norm_state_low_noise_w[i] = w[i + norm_state_fit_start_index]
+kf_extract_params, kf_extract_cov = scipy.optimize.curve_fit(dirac_delta, k, fermi_mdc)
+extracted_kf = kf_extract_params[2]
+kf = extracted_kf
 
-    scipy_nofe_params, scipy_nofe_pcov = scipy.optimize.curve_fit(lorentz_form, norm_state_low_noise_w, norm_state_low_noise_slice, maxfev=3000)
+extracted_c = c
+extracted_a = -extracted_c / (extracted_kf ** 2)
 
-    # a is amplitude scale, b is position, c is width | stop if amplitude is much smaller than that far from fermi
-    if slice_k_index<3:
-        lorentz_scale_array[slice_k_index] = scipy_nofe_params[0]
-    elif (scipy_nofe_params[0] < 0.95 * np.average(lorentz_scale_array)):
-        fermi_energy_extraction_stop = slice_k_index
-        print("fe extraction ending at:",slice_k_index)
-        break
-
-    # add to trajectory
-    trajectory[slice_k_index] = scipy_nofe_params[1]
-
-reduced_k = np.zeros(fermi_energy_extraction_stop)
-reduced_trajectory = np.zeros(fermi_energy_extraction_stop)
-
-for i in range(fermi_energy_extraction_stop):
-    reduced_k[i] = k[i]
-    reduced_trajectory[i] = trajectory[i]
-
-scipy_trajectory_params, scipy_trajectory_pcov = scipy.optimize.curve_fit(e, reduced_k, reduced_trajectory)
-
-print("extracted a:", scipy_trajectory_params[0], "extracted c:", scipy_trajectory_params[1])
-print("true a:", a, "| true c:", c, "\n")
-
-extracted_a = scipy_trajectory_params[0]
-extracted_c = scipy_trajectory_params[1]
-
-im = plt.imshow(norm_state_Z, cmap=plt.cm.RdBu, aspect='auto', extent=[min(k), max(k), min(w), max(w)], origin='lower')  # drawing the function
-plt.colorbar(im)
-plt.plot(reduced_k, e(reduced_k,a,c))
-plt.plot(reduced_k, reduced_trajectory)
-plt.title("Norm State Fit for a,c")
+plt.plot(k, dirac_delta(k, *kf_extract_params), label='Fit')
+plt.plot(k, fermi_mdc)
+plt.legend()
 plt.show()
 
+print("extracted params: ", kf_extract_params)
+print("extracted a: ", extracted_a)

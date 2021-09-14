@@ -2,7 +2,7 @@ from heat_map_setup import *
 
 # 7.91621939e+01 1.34835884e+02 9.99062365e+02 6.46765425e+00
 #  2.27918349e-02 1.47047030e+01
-
+'''
 a0 = 1786.54730
 a1 = 0
 b0 = -2773.49092
@@ -26,7 +26,7 @@ def for_energy_res(w, a0, a1, b0, b1, energy_res):
     R_temp = partial(R_vectorized, sigma=energy_res)
     func2 = partial(gold_func1, v0=a0, v1=a1)
     return energy_convolution(w, func2, R_temp) + b0 + b1 * w
-'''
+
 w_gold = np.arange(-15,15,0.5)
 X_gold, Y_gold = np.meshgrid(k, w_gold)
 Z_gold = I_gold(X_gold, Y_gold) + background_gold(X_gold, Y_gold)
@@ -205,7 +205,7 @@ plt.savefig('(10) EDC Selection.svg', format='svg')
 # plt.show()
 
 quit()
-'''
+
 
 
 import mpmath as mp
@@ -218,7 +218,7 @@ def asympt_inverse_transformation(D):
 
 def inverse_transformation(y):
     return 2*mp.nsum(lambda z: mp.sqrt(z+0.375)*mp.power(y,z)*mp.exp(-y)/mp.fac(z),[0,mp.inf])
-'''
+
 print(forward_transformation(600))
 print(asympt_inverse_transformation(forward_transformation(600)))
 
