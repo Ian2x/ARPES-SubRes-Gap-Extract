@@ -130,16 +130,6 @@ def norm_state_Io_n_A_BCS(k, w):
 def norm_state_I(k, w):
     return energy_convolution_map(k, w, norm_state_Io_n_A_BCS, R_vectorized, scaleup_factor)
 
-
-# [Left Shift Multiplier]: How far left to continue fit
-left_shift_mult = 2
-
-# [Fit Start Momentum]: Momentum to start fit (not indexed)
-fit_start_k = 0
-if a != 0:
-    fit_start_k = math.sqrt((-left_shift_mult * dk - c) / a)
-print('fit_start_k (not indexed): ', fit_start_k)
-
 ##################################################
 # HEAT MAP
 ##################################################

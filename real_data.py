@@ -30,7 +30,7 @@ plt.show()
 # 0289 --> 0333
 # /Users/ianhu/Desktop/ARPES Shared Data/X20141210_far_off_node/OD50_0289_nL.dat
 
-Eugen_data_file = open(r"/Users/ianhu/Desktop/ARPES Shared Data/X20141210_far_off_node/OD50_0289_nL.dat", "r")
+Eugen_data_file = open(r"/Users/ianhu/Desktop/ARPES Shared Data/X20141210_far_off_node/OD50_0333_nL.dat", "r")
 
 temp = Eugen_data_file.readline() # skip blank starting line
 temp = Eugen_data_file.readline() # energy?
@@ -66,9 +66,9 @@ plt.show()
 
 # 250, 100, 20, 260 for near node
 # 60, 100, 30, 340 for far off node
-z_height = 80
+z_height = 110
 z_width = 100
-height_offset = 30
+height_offset = 0
 width_offset = 340
 
 temp_k = np.zeros(z_width)
@@ -83,16 +83,11 @@ for i in range(z_height):
 
 Z = np.multiply(Z, 5000)
 Z = np.around(Z)
+
 # Overwrite original k,w with reduced window k,w
 k = temp_k
 w = temp_w
 
 
-plt.title("Reduced window")
-im = plt.imshow(Z, cmap=plt.cm.RdBu, aspect='auto', extent=[min(k), max(k), min(w), max(w)])
-plt.colorbar(im)
-plt.show()
-print(Z)
-
-energy_conv_sigma = 2 # guess for now
+energy_conv_sigma = 8 # guess for now 1-->35  15-->
 k_step = 9999 #

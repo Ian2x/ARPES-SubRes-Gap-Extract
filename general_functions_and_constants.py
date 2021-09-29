@@ -12,6 +12,7 @@ hbar = 6.582 * 10 ** (-13)  # meV*s
 mass_electron = 5.1100 * 10 ** 8  # mev/c^2
 speed_light = 2.998 * 10 ** 8  # m/s
 
+ONE_BILLION = 1000000000
 
 # Gaussian Function
 def R(dw, sigma):

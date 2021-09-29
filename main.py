@@ -25,35 +25,49 @@ def energy_conv_integrand(integration_w, fixed_w, T, dk, a, c, fixed_k):
         integration_w)
 
 
-# EDC slice function
-def spectrum_slice_array(w_array, scale, T, dk, a, c, fixed_k):
+# Secondary electron effect
+def secondary_electron_contribution_array(w_array, p, q, r, s):
+
     return_array = np.zeros(w_array.size)
+
+    # p is scale-up factor (0, inf), q is horizontal shift (-inf, inf), r is steepness (-inf, 0]
     for i in range(w_array.size):
-        return_array[i] = scale * scipy.integrate.quad(energy_conv_integrand, w_array[i] - 250, w_array[i] + 250,
-                                                       args=(w_array[i], T, dk, a, c, fixed_k))[0]
+        return_array[i] = p / (1 + math.exp(r * w_array[i] - r * q)) + s
+
     return return_array
 
 
-# Linearly space 6 points (max of 6 EDCs in fit)
-short_k = np.linspace(max(0, k_as_index(fit_start_k)), k_as_index(extracted_kf, k), 6)
-# Round to integers
-short_k = short_k.astype(int)
-# Remove repeats
-short_k = np.unique(short_k)
-# Try to fit from fermi momentum
-short_k = np.flip(short_k, 0)
-print(short_k)
+
+# EDC slice function
+def spectrum_slice_array(w_array, p, q, r, s, scale, T, dk, a, c, fixed_k):
+    return_array = np.zeros(w_array.size)
+    secondary_electrons_array = secondary_electron_contribution_array(w_array, p, q, r, s)
+    for i in range(w_array.size):
+        return_array[i] = scale * scipy.integrate.quad(energy_conv_integrand, w_array[i] - 250, w_array[i] + 250,
+                                                       args=(w_array[i], T, dk, a, c, fixed_k))[0] + \
+                          secondary_electrons_array[i]
+    return return_array
+
+
+# [Left Shift Multiplier]: How far left to continue fit
+left_shift_mult = 2
+
+# [Fit Start Momentum]: Momentum to start fit (not indexed)
+fit_start_k = 0
+if a != 0:
+    fit_start_k = math.sqrt((-left_shift_mult * dk - c) / a)
+print('fit_start_k (not indexed): ', fit_start_k)
 
 # Save previous fit guesses to accelerate fitting process (superconducting state)
-last_dk = 1
-last_scale = scaleup_factor / 10
-last_T = 1
+last_p = 500
+last_q = -15
+last_r = 0.05
+last_s = 0
 
-# Save previous fit guesses to accelerate fitting process (normal state)
-norm_state_last_scale = scaleup_factor / 10
-norm_state_last_T = 1
-norm_state_last_a = 1
-norm_state_last_c = -1
+last_scale = 1
+last_T = 1
+last_dk = 1
+
 
 # For copy-pasting results
 easy_print_array = []
@@ -61,32 +75,31 @@ easy_print_array = []
 # Plot spectrum (Might need to do origin lower sometimes)
 im = plt.imshow(Z, cmap=plt.cm.RdBu, aspect='auto', extent=[min(k), max(k), min(w), max(w)])
 
+plt.title("Reduced window")
 plt.colorbar(im)
 plt.xlabel('k ($A^{-1}$)')
 plt.ylabel('w (mev)')
 
 plt.show()
 
-print(Z)
-
 # /Users/ianhu/PycharmProjects/ARPES-SubRes-Gap-Extract
 # np.savetxt("/Users/ianhu/Documents/ARPES CNN/Dataset 1 - c=-1000, sigma=15/"+str(round(dk,6))+".csv", Z, delimiter=",")
 
 # Current index of EDC being fitted
-curr_index = k_as_index(kf, k) + 1  # +1 is to account for -1 at start of loop
+curr_index = k_as_index(kf, k) + 5  # +1 is to account for -1 at start of loop
 
 # Store gap size estimates from each index
 gap_estimates = np.zeros(k_as_index(kf, k) + 1)
 
 # Keep track of number of EDCs used
-EDCs_used = 0
+EDCs_used_count = 0
 
 # Run at least 3 times, then continue factoring in more EDC slices while suggested
-while EDCs_used < 3 or curr_k_start_suggestion < k[curr_index]:
-    EDCs_used += 1
-    curr_index -= 1
+while EDCs_used_count < 3 or curr_k_start_suggestion < k[curr_index]:
+    EDCs_used_count += 1
+    curr_index -= 5
     if (curr_index < 0):
-        if (EDCs_used < 3):
+        if (EDCs_used_count < 3):
             print("ERROR: Not enough points left of kf to fit with")
             quit()
         print("WARNING: Hit momentum index 0 in fit, consider extending left bounds")
@@ -106,7 +119,7 @@ while EDCs_used < 3 or curr_k_start_suggestion < k[curr_index]:
 
     for i in range(z_height):
         # Build EDC
-        EDC[i] = Z[i][curr_index]
+        EDC[i] = Z[z_height - 1 - i][curr_index] # CHANGED z_height-1-i => i
         # Start fit at first index greater than min_fit_count
         if fit_start_index == -1:
             if EDC[i] >= min_fit_count:
@@ -140,11 +153,13 @@ while EDCs_used < 3 or curr_k_start_suggestion < k[curr_index]:
     for i in range(points_in_fit):
         low_noise_slice[i] = Z[i + fit_start_index][curr_index]
         low_noise_w[i] = w[i + fit_start_index]
+    low_noise_slice = list(reversed(low_noise_slice))
+    print(low_noise_w)
+    print(low_noise_slice)
 
     # Functions to fit ( Cheated kf || Cheated kf + No gap || No kf )
     fit_func_w_scale_T_dk = partial(spectrum_slice_array, a=a, c=c, fixed_k=curr_k)
     fit_func_w_scale_T = partial(spectrum_slice_array, dk=0, a=a, c=c, fixed_k=curr_k)
-    nokf_fit_func_w_scale_T_dk = partial(spectrum_slice_array, a=extracted_a, c=extracted_c, fixed_k=curr_k)
 
     # Scipy curve fit
 
@@ -156,27 +171,23 @@ while EDCs_used < 3 or curr_k_start_suggestion < k[curr_index]:
 
     scipy_full_params, scipy_full_pcov = scipy.optimize.curve_fit(fit_func_w_scale_T_dk,
                                                                   low_noise_w, low_noise_slice,
-                                                                  p0=[last_scale, last_T, last_dk], maxfev=2000,
-                                                                  bounds=([scaleup_factor / 10, 0., 0.],
-                                                                          [scaleup_factor * 10, 50., 50.]),
+                                                                  p0=[last_p, last_q, last_r, last_s, last_scale, last_T,
+                                                                      last_dk], maxfev=2000,
+                                                                  bounds=(
+                                                                  [300, -40, 0., 0, 1 / ONE_BILLION, 0., 0.],
+                                                                  [700, 10, 0.5, 200, ONE_BILLION, 75., 75.]),
                                                                   sigma=fitting_sigma)
+
+    '''
     scipy_red_params, scipy_red_pcov = scipy.optimize.curve_fit(fit_func_w_scale_T, low_noise_w,
                                                                 low_noise_slice, p0=[last_scale, last_T], maxfev=2000,
                                                                 bounds=([scaleup_factor / 10, 0.],
                                                                         [scaleup_factor * 10, 50.]),
                                                                 sigma=fitting_sigma)
-    nokf_scipy_full_params, nokf_scipy_full_pcov = scipy.optimize.curve_fit(nokf_fit_func_w_scale_T_dk,
-                                                                            low_noise_w, low_noise_slice,
-                                                                            p0=[last_scale, last_T, last_dk],
-                                                                            maxfev=2000,
-                                                                            bounds=([scaleup_factor / 10, 0., 0.],
-                                                                                    [scaleup_factor * 10, 50., 50.]),
-                                                                            sigma=fitting_sigma)
-
+    '''
     # Plot fits
-    # plt.plot(w, fit_func_w_scale_T_dk(w, *scipy_full_params), label='Fitted curve (cheated)')
-    plt.plot(w, nokf_fit_func_w_scale_T_dk(w, *nokf_scipy_full_params), label='Fitted curve (no kf)')
-    plt.plot(w, fit_func_w_scale_T_dk(w, scaleup_factor / w_step, T, dk), label='Perfect fit')
+    plt.plot(w, fit_func_w_scale_T_dk(w, *scipy_full_params), label='Fitted curve')
+    # plt.plot(w, fit_func_w_scale_T_dk(w, scaleup_factor / w_step, T, dk), label='Perfect fit')
 
     # Plot data
     plt.plot(w, EDC, label='Data')
@@ -194,25 +205,77 @@ while EDCs_used < 3 or curr_k_start_suggestion < k[curr_index]:
     plt.show()
 
     # Save fit params to accelerate future fitting
-    last_scale = nokf_scipy_full_params[0]
-    last_T = nokf_scipy_full_params[1]
-    last_dk = nokf_scipy_full_params[2]
+
+    last_p = scipy_full_params[0]
+    last_q = scipy_full_params[1]
+    last_r = scipy_full_params[2]
+    last_s = scipy_full_params[3]
+
+    last_scale = scipy_full_params[4]
+    last_T = scipy_full_params[5]
+    last_dk = scipy_full_params[6]
 
     # Print dk guesses
-    print("calculated dk (nokf):", last_dk)
-    print("cheated dk (kf):", scipy_full_params[2])
+    print("dk:", scipy_full_params[6])
+    print(scipy_full_params)
+
+
+
+
+
 
     # Save dk guess to array
     gap_estimates[curr_index] = last_dk
 
     # Compare gap size estimate to number of slices suggested
     curr_dk_guess = sum(gap_estimates) / (k_as_index(kf, k) - curr_index + 1)
-    curr_k_start_suggestion = math.sqrt((-2 * curr_dk_guess - extracted_c) / extracted_a)
+    curr_k_start_suggestion = math.sqrt((-2 * curr_dk_guess - c) / a)
 
 print("final k index: ", curr_index)
 print(gap_estimates)
 print(curr_dk_guess)
 
+##################################################
+# EXPERIMENTAL SECTION
+##################################################
+'''
+p0=[last_q, last_r, last_s, last_scale, 
+last_T,
+
+     last_dk], maxfev=2000,
+   bounds=([0, -20, -ONE_BILLION, 1 / ONE_BILLION,
+   0., 0.],
+[ONE_BILLION, 20, 0, ONE_BILLION, 75., 75.]),
+
+'''
+pars = lmfit.Parameters()
+pars.add('p', value=last_p, min=400, max=800)
+pars.add('q', value=last_q, min=-40, max=10)
+pars.add('r', value=last_r, min=-ONE_BILLION, max=ONE_BILLION)
+pars.add('scale', value=last_scale, min=1 / ONE_BILLION, max=ONE_BILLION)
+pars.add('T', value=last_T, min=0., max=75)
+pars.add('dk', value=last_dk, min=0., max=75)
+
+momentum_to_fit = [k_as_index(kf, k), k_as_index(kf, k) - 5, k_as_index(kf, k) - 10]
+EDC_func_array = []
+low_noise_slices = []
+for i in range(momentum_to_fit.size):
+    EDC_func_array[i] = partial(spectrum_slice_array, a=a, c=c, fixed_k=momentum_to_fit[i])
+
+def residual(p):
+    residual = 0
+    for i in range(momentum_to_fit.size):
+        residual+=math.fabs(EDC_func_array[i](low_noise_w, p['q'], p['r'], p['s'], p['scale'], p['T'], p['dk']) - low_noise_slices[i])
+    return residual
+
+mini = lmfit.Minimizer(residual, pars, nan_policy='propagate', calc_covar=True)
+# out1 = mini.minimize(method='nelder')
+# kwargs = {"sigma": np.sqrt(low_noise_slice)}
+# result = mini.minimize(method='leastsq', params=out1.params, args=kwargs)
+result = mini.minimize(method='leastsq')
+lmfit_scale = result.params.get('scale').value
+lmfit_T = result.params.get('T').value
+lmfit_dk = result.params.get('dk').value
 ##################################################
 # SHOW PLOT
 ##################################################
