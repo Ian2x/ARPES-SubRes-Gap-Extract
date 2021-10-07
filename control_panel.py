@@ -8,7 +8,7 @@ import random
 dk = 5
 
 # [Energy Resolution]: typically 2-50 meV
-energy_conv_sigma = 2
+energy_conv_sigma = 8
 
 # [Minimum electron count to fit]: ignore noisy data with counts lower than this value
 min_fit_count = 4
@@ -17,14 +17,4 @@ min_fit_count = 4
 T = 5
 
 # [Electron count scale-up factor]: scales count size; roughly considers broadening effects (energy_conv_sigma and T)
-scaleup_factor = 200 * (energy_conv_sigma + T)
-
-# 1, 2.5, 5 and 44, 54, 15
-
-'''
-peak counts at 40, 250, 1500
-
-1 mev gap, 3 mev energy res, /50000 scaleup
-10 mev gap, 15 mev energy res, 50000 scaleup (peak ~ 1000)
-40 mev gap, 50 mev energy res, 30000 scaleup (peak ~ 1500)
-'''
+scaleup_factor = 2000 * (energy_conv_sigma + T)

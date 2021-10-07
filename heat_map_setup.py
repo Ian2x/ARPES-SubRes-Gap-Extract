@@ -87,14 +87,22 @@ u_vectorized = np.vectorize(u)
 
 
 def v(k, a, c, dk):
-    return 1 - u_vectorized(k, a, c, dk)
+    # return 1 - u(k, a, c, dk)
+    return 1 - u(k, a, c, dk)
+
+v_vectorized = np.vectorize(v)
 
 
 # BCS Spectral Function (https://arxiv.org/pdf/cond-mat/0304505.pdf) (non-constant gap)
 def A_BCS(k, w, a, c, dk, T):
     return (1 / math.pi) * (
-            u_vectorized(k, a, c, dk) * T / ((w - E(k, a, c, dk)) ** 2 + T ** 2) + v(k, a, c, dk) * T / (
+            u(k, a, c, dk) * T / ((w - E(k, a, c, dk)) ** 2 + T ** 2) + v(k, a, c, dk) * T / (
             (w + E(k, a, c, dk)) ** 2 + T ** 2))
+    '''
+    return (1 / math.pi) * (
+            u_vectorized(k, a, c, dk) * T / ((w - E(k, a, c, dk)) ** 2 + T ** 2) + v_vectorized(k, a, c, dk) * T / (
+            (w + E(k, a, c, dk)) ** 2 + T ** 2))
+    '''
 
 
 # (http://ex7.iphy.ac.cn/downfile/32_PRB_57_R11093.pdf)
@@ -133,7 +141,7 @@ def norm_state_I(k, w):
 ##################################################
 # HEAT MAP
 ##################################################
-'''
+
 # k and w values for plotting
 X, Y = np.meshgrid(k, w)
 
@@ -145,4 +153,3 @@ add_noise(Z)
 z_width = Z[0].size
 z_height = int(Z.size / z_width)
 kf_index = k_as_index(kf)
-'''

@@ -24,26 +24,12 @@ def energy_conv_integrand(integration_w, fixed_w, T, dk, a, c, fixed_k):
     return A_BCS(fixed_k, integration_w, a, c, dk, T) * R(math.fabs(integration_w - fixed_w), energy_conv_sigma) * n(
         integration_w)
 
-
-# Secondary electron effect
-def secondary_electron_contribution_array(w_array, p, q, r, s):
-    return_array = np.zeros(w_array.size)
-
-    # p is scale-up factor (0, inf), q is horizontal shift (-inf, inf), r is steepness (-inf, 0]
-    for i in range(w_array.size):
-        return_array[i] = p / (1 + math.exp(r * w_array[i] - r * q)) + s
-
-    return return_array
-
-
 # EDC slice function
 def spectrum_slice_array(w_array, p, q, r, s, scale, T, dk, a, c, fixed_k):
     return_array = np.zeros(w_array.size)
-    secondary_electrons_array = secondary_electron_contribution_array(w_array, p, q, r, s)
     for i in range(w_array.size):
         return_array[i] = scale * scipy.integrate.quad(energy_conv_integrand, w_array[i] - 250, w_array[i] + 250,
-                                                       args=(w_array[i], T, dk, a, c, fixed_k))[0] + \
-                          secondary_electrons_array[i]
+                                                       args=(w_array[i], T, dk, a, c, fixed_k))[0]
     return return_array
 
 
@@ -57,17 +43,9 @@ if a != 0:
 print('fit_start_k (not indexed): ', fit_start_k)
 
 # Save previous fit guesses to accelerate fitting process (superconducting state)
-last_p = 500
-last_q = -15
-last_r = 0.05
-last_s = 0
-
 last_scale = 1
 last_T = 1
 last_dk = 1
-
-# For copy-pasting results
-easy_print_array = []
 
 # Plot spectrum (Might need to do origin lower sometimes)
 im = plt.imshow(Z, cmap=plt.cm.RdBu, aspect='auto', extent=[min(k), max(k), min(w), max(w)])
@@ -79,9 +57,6 @@ plt.ylabel('w (mev)')
 
 plt.show()
 
-# /Users/ianhu/PycharmProjects/ARPES-SubRes-Gap-Extract
-# np.savetxt("/Users/ianhu/Documents/ARPES CNN/Dataset 1 - c=-1000, sigma=15/"+str(round(dk,6))+".csv", Z, delimiter=",")
-
 # Current index of EDC being fitted
 curr_index = k_as_index(kf, k) + 5  # +1 is to account for -1 at start of loop
 
@@ -90,7 +65,7 @@ gap_estimates = np.zeros(k_as_index(kf, k) + 1)
 
 # Keep track of number of EDCs used
 EDCs_used_count = 0
-'''
+
 # Run at least 3 times, then continue factoring in more EDC slices while suggested
 while EDCs_used_count < 3 or curr_k_start_suggestion < k[curr_index]:
     EDCs_used_count += 1
@@ -174,13 +149,6 @@ while EDCs_used_count < 3 or curr_k_start_suggestion < k[curr_index]:
                                                                   [300, -40, 0., 0, 1 / ONE_BILLION, 0., 0.],
                                                                   [700, 10, 1, 200, ONE_BILLION, 75., 75.]),
                                                                   sigma=fitting_sigma)
-
-      
-    scipy_red_params, scipy_red_pcov = scipy.optimize.curve_fit(fit_func_w_scale_T, low_noise_w,
-                                                                low_noise_slice, p0=[last_scale, last_T], maxfev=2000,
-                                                                bounds=([scaleup_factor / 10, 0.],
-                                                                        [scaleup_factor * 10, 50.]),
-                                                                sigma=fitting_sigma)
     
     # Plot fits
     plt.plot(w, fit_func_w_scale_T_dk(w, *scipy_full_params), label='Fitted curve')
@@ -203,11 +171,6 @@ while EDCs_used_count < 3 or curr_k_start_suggestion < k[curr_index]:
 
     # Save fit params to accelerate future fitting
 
-    last_p = scipy_full_params[0]
-    last_q = scipy_full_params[1]
-    last_r = scipy_full_params[2]
-    last_s = scipy_full_params[3]
-
     last_scale = scipy_full_params[4]
     last_T = scipy_full_params[5]
     last_dk = scipy_full_params[6]
@@ -226,93 +189,3 @@ while EDCs_used_count < 3 or curr_k_start_suggestion < k[curr_index]:
 print("final k index: ", curr_index)
 print(gap_estimates)
 print(curr_dk_guess)
-'''
-##################################################
-# EXPERIMENTAL SECTION
-##################################################
-
-pars = lmfit.Parameters()
-pars.add('a', min=850, max=1050)  # a = 955.6632874098885
-pars.add('c', min=-60, max=-30)  # c = -46.169179840226974
-pars.add('p', min=300, max=700)
-pars.add('q', min=-40, max=10)
-pars.add('r', min=0, max=1)
-pars.add('s', min=0, max=200)
-pars.add('scale', min=1 / ONE_BILLION, max=ONE_BILLION)
-pars.add('T', min=0, max=75)
-pars.add('dk', min=0, max=75)
-
-# Momentum to perform fit over
-momentum_to_fit = [k_as_index(kf, k), k_as_index(kf, k) - 5, k_as_index(kf, k) - 10]
-print(momentum_to_fit)
-
-# EDC slices to be fitted
-low_noise_slices = []
-for i in range(len(momentum_to_fit)):
-    # Build EDC
-    EDC = np.zeros(z_height)
-    for j in range(z_height):
-        EDC[j] = Z[z_height - 1 - j][momentum_to_fit[i]]
-    # Store EDC
-    low_noise_slices.append(EDC)
-print(low_noise_slices)
-
-# Store EDC function for each momentum
-EDC_func_array = []
-for i in range(len(momentum_to_fit)):
-    EDC_func_array.append(partial(spectrum_slice_array, fixed_k=k[momentum_to_fit[i]]))
-print(EDC_func_array)
-
-temp = partial(spectrum_slice_array, fixed_k=k[momentum_to_fit[i]])
-
-
-def residual(p):
-    '''
-    residual_array = np.zeros(z_height)
-    for i in range(len(momentum_to_fit)):
-        temp_array = EDC_func_array[i](w, p['p'], p['q'], p['r'], p['s'], p['scale'], p['T'], p['dk'], p['a'], p['c']) - low_noise_slices[i]
-        residual_array = np.add(residual_array, np.fabs(temp_array))
-    print(len(residual_array))
-    '''
-    return temp(w, p['p'], p['q'], p['r'], p['s'], p['scale'], p['T'], p['dk'], p['a'], p['c']) - low_noise_slices[0]
-    # return EDC_func_array[0](w, p['p'], p['q'], p['r'], p['s'], p['scale'], p['T'], p['dk'], p['a'], p['c']) - low_noise_slices[0]
-    '''
-    residual_array = []
-    for i in range(len(momentum_to_fit)):
-        residual_array = np.concatenate((residual_array, (
-                    EDC_func_array[i](w, p['p'], p['q'], p['r'], p['s'], p['scale'], p['T'], p['dk'], p['a'], p['c']) -
-                    low_noise_slices[i])))
-    return residual_array
-    '''
-
-
-'''
-        return fit_func_w_dk_scale_T(low_noise_selected_w, p['scale'], p['T'], p['dk']) - low_noise_slice
-
-model1 = params['offset'] + x * params['slope1']
-    model2 = params['offset'] + x * params['slope2']
-
-    resid1 = dat1 - model1
-    resid2 = dat2 - model2
-    return np.concatenate((resid1, resid2))
-
-'''
-
-mini = lmfit.Minimizer(residual, pars, nan_policy='propagate', calc_covar=True)
-# out1 = mini.minimize(method='nelder')
-# kwargs = {"sigma": np.sqrt(low_noise_slice)}
-# result = mini.minimize(method='leastsq', params=out1.params, args=kwargs)
-print("ENTERING THE VOID...")
-result = mini.minimize(method='leastsq')
-
-print(lmfit.fit_report(result))
-
-##################################################
-# SHOW PLOT
-##################################################
-plt.tight_layout()
-# plt.savefig('(11) Fitting EDCs.svg', format='svg')
-plt.show()
-print('\n\n')
-for element in easy_print_array:
-    print(element)
