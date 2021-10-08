@@ -1,0 +1,289 @@
+Index: main.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>##################################################\n# IMPORT LIBRARIES\n##################################################\nimport scipy.optimize\nimport scipy.integrate\n# binding energy dependent line width --> fading\n# secondary electrons --> soup (DOS*factor+spectral function)*fermi function, convolve, poisson\n\nfrom kf_from_norm_state import *\n##################################################\n# Z HEAT MAP INFO\n##################################################\n\nprint(\"kf:\", kf, \"| index:\", k_as_index(kf))\nprint(\"energy_conv_sigma:\", energy_conv_sigma)\nprint(\"dk:\", dk)\nprint(\"T:\", T)\n\n##################################################\n# EXTRACT GAP - TRAJECTORY V2\n##################################################\n\n# NORMAN TECHNIQUE\n\n# requires knowledge of temperature and energy resolution --> should test resilience of these\n# light dependence on kf? but depends on accuracy of knowledge of k (no k convolution)\n\ndef energy_conv_integrand(integration_w, fixed_w, T, dk, a, c, fixed_k):\n    return A_BCS(fixed_k, integration_w, a, c, dk, T) * R(math.fabs(integration_w - fixed_w), energy_conv_sigma) * n(integration_w)\n\ndef spectrum_slice_array(w_array, scale, T, dk, a, c, fixed_k):\n    return_array = np.zeros(w_array.size)\n    for i in range(w_array.size):\n        # return_array[i] = scale*A_BCS(slice_k, w_array[i], a, c, dk, T) * n(w_array[i])\n        return_array[i] = scale*scipy.integrate.quad(energy_conv_integrand, w_array[i] - 250, w_array[i] + 250, args=(w_array[i], T, dk, a, c, fixed_k))[0]\n    return return_array\n\ndef spectrum_slice_array_alt(w_array, scale, T, a, c, dk, fixed_k):\n    return spectrum_slice_array(w_array, scale, T, dk, a, c, fixed_k)\n\n# short_k = np.arange(math.floor(k_as_index(fit_start_k)),k_as_index(kf)+1, 1) # all indexes\nshort_k = np.linspace(max(0,k_as_index(fit_start_k)), k_as_index(kf), 6)\nshort_k = short_k.astype(int)\nshort_k = np.unique(short_k)\nshort_k = np.flip(short_k, 0) # try to fit starting from fermi slice\nprint(short_k)\ncurr_index=0\n\nlast_dk = 1\nlast_scale = scaleup_factor/10\nlast_T = 1\n\nnorm_state_last_scale = scaleup_factor/10\nnorm_state_last_T = 1\nnorm_state_last_a = 1\nnorm_state_last_c = -1\n\neasy_print_array = []\n\n# set up multiple subplots\nnum_plots = short_k.size + 1\nplt.figure(figsize=(6 * num_plots, 6), dpi=120)\nfirst_plot = plt.subplot(1, num_plots, 1)\nfirst_plot.set_title(\"Spectrum (dk=\" + str(dk)+\")\")\nim = first_plot.imshow(Z, cmap=plt.cm.RdBu, aspect='auto', extent=[min(k), max(k), min(w), max(w)], origin='lower')  # drawing the function\n# im = first_plot.imshow(Z, cmap=plt.cm.RdBu, aspect='auto', extent=[temp_k[690-width_offset-1], temp_k[690-width_offset-exp_width-1], temp_w[401-height_offset-exp_height-1], temp_w[401-height_offset-1]])\n\nplt.colorbar(im)\nplt.xlabel('k ($A^{-1}$)')\nplt.ylabel('w (mev)')\n# /Users/ianhu/PycharmProjects/ARPES-SubRes-Gap-Extract\n# np.savetxt(\"/Users/ianhu/Documents/ARPES CNN/Dataset 1 - c=-1000, sigma=15/\"+str(round(dk,6))+\".csv\", Z, delimiter=\",\")\n\nplt_index=2 # first plot is for spectrum\n'''\nfor slice_k_index in short_k:\n\n    # ===== ===== ===== symmetrization testing ===== ===== ===== \n    if slice_k_index==k_as_index(kf):\n        symmetrized_slice = np.zeros(z_height*2)\n        symmetrized_w = np.zeros(z_height*2)\n        for i in range(z_height):\n            print('===')\n            print(w[i])\n            print(Z[i][slice_k_index])\n            print(n(w[i]))\n            symmetrized_slice[i] = Z[i][slice_k_index]# / n(w[i])\n            symmetrized_w[i] = w[i]\n        for i in range(z_height):\n            symmetrized_slice[z_height+i] = Z[i][slice_k_index]# / n(w[i])\n            symmetrized_w[z_height+i] = -w[i]\n        # zipped_pairs = zip(symmetrized_w, symmetrized_slice)\n\n        # symmetrized_slice = [x for _, x in sorted(zipped_pairs)]\n        # symmetrized_w.sort()\n\n    plt.plot(symmetrized_w, symmetrized_slice)\n    plt.show()\n    for i in range (z_height*2):\n        print(symmetrized_w[i])\n        print(symmetrized_slice[i])\n    quit()\n    # ===== ===== ===== ===== ===== \n    \n    Norman_subplot = plt.subplot(1, num_plots, plt_index)\n    plt_index+=1\n    print('==============================================')\n    print('slice_k_index: ' + str(slice_k_index) + ' (' + str(k[slice_k_index]) + ')')\n    print('progress: ' + str(curr_index / short_k.size))\n    EDC = np.zeros(z_height)\n    curr_k = k[slice_k_index]\n\n    # IGNORE NOISY DATA\n    fit_start_index=-1\n    fit_end_index=-1\n\n    for i in range(z_height):\n        EDC[i] = Z[i][slice_k_index]\n        if fit_start_index == -1:\n            if EDC[i] >= min_fit_count:\n                fit_start_index=i\n        if EDC[i] >= min_fit_count:\n            fit_end_index=i\n\n    # SUFFICIENT ROOM FOR ENERGY CONV\n    min_indexes_from_edge = 3*energy_conv_sigma/w_step\n    fit_start_index = int(max(fit_start_index, round(min_indexes_from_edge)))\n    fit_end_index = int(min(fit_end_index, round(z_height-1-min_indexes_from_edge)))\n    points_in_fit = fit_end_index-fit_start_index+1 # include end point\n\n    # LOW NOISE SLICE CREATION\n    low_noise_slice = np.zeros(points_in_fit)\n    low_noise_w = np.zeros(points_in_fit)\n    for i in range(points_in_fit):\n        low_noise_slice[i]=Z[i+fit_start_index][slice_k_index]\n        low_noise_w[i] = w[i + fit_start_index]\n\n    # FUNCTION TO FIT\n    fit_func_w_scale_T_dk = partial(spectrum_slice_array, a=a, c=c, fixed_k=curr_k)\n    fit_func_w_scale_T = partial(spectrum_slice_array, dk = 0, a=a, c=c, fixed_k=curr_k)\n\n    nofe_fit_func_w_scale_T_dk = partial(spectrum_slice_array, a=extracted_a, c=extracted_c, fixed_k=curr_k)\n\n    # ===== ===== ===== SCIPY ===== ===== =====\n    scipy_full_params, scipy_full_pcov = scipy.optimize.curve_fit(fit_func_w_scale_T_dk, low_noise_w, low_noise_slice, p0=[last_scale, last_T, last_dk], maxfev=2000, bounds=([scaleup_factor / 10, 0., 0.], [scaleup_factor * 10, 50., 50.]), sigma=np.sqrt(low_noise_slice))\n    scipy_red_params, scipy_red_pcov = scipy.optimize.curve_fit(fit_func_w_scale_T, low_noise_w, low_noise_slice, p0=[last_scale, last_T], maxfev=2000, bounds=([scaleup_factor / 10, 0.], [scaleup_factor * 10, 50.]), sigma=np.sqrt(low_noise_slice))\n\n    nofe_scipy_full_params, nofe_scipy_full_pcov = scipy.optimize.curve_fit(nofe_fit_func_w_scale_T_dk, low_noise_w, low_noise_slice, p0=[last_scale, last_T, last_dk], maxfev=2000, bounds=([scaleup_factor / 10, 0., 0.], [scaleup_factor * 10, 50., 50.]), sigma=np.sqrt(low_noise_slice))\n\n    last_scale = scipy_full_params[0]\n    last_T = scipy_full_params[1]\n    last_dk = scipy_full_params[2]\n\n    print(\"scipy full params: \", scipy_full_params)\n    scipy_std_err = math.sqrt(scipy_full_pcov[2][2] / math.sqrt(points_in_fit))\n    print(\"dk stderr +/- : \" + str(scipy_std_err) + \" (\" + str(100 * scipy_std_err / last_dk) + \"%)\")\n    print(\"scipy full pcov: \\n\", scipy_full_pcov)\n\n    print(\"nofe scipy full params: \", nofe_scipy_full_params)\n\n    # SCIPY STATISTICAL RESULTS\n    print(\"DOF: \", points_in_fit-3)\n    print(\"scipy redchi:\", manualRedChi(\\\n        low_noise_slice, fit_func_w_scale_T_dk(low_noise_w, *scipy_full_params), \\\n        low_noise_slice, points_in_fit - 3))\n    print(\"perfect redchi:\", manualRedChi(\\\n        low_noise_slice, fit_func_w_scale_T_dk(low_noise_w, scaleup_factor / w_step, T, dk), \\\n        low_noise_slice, points_in_fit - 3))\n\n    scipy_f_stat = manualFTest(\\\n        low_noise_slice, fit_func_w_scale_T(low_noise_w, *scipy_red_params), 2, \\\n        fit_func_w_scale_T_dk(low_noise_w, *scipy_full_params), 3,\n        low_noise_slice, points_in_fit\n        )\n    print(\"f test value:\", scipy_f_stat)\n    print(\"p-value (of gap): \", scipy.stats.f.cdf(scipy_f_stat, 3-2, points_in_fit-3))\n\n    # SCIPY PLOT\n    plt.plot(w, fit_func_w_scale_T_dk(w, *scipy_full_params), label='Fitted curve')\n    plt.plot(w, fit_func_w_scale_T_dk(w, scaleup_factor / w_step, T, dk), label='Perfect fit')\n\n    # DATA/REFERENCE PLOTS\n    plt.plot(w, EDC, label='Data')\n\n    # ===== ===== ===== LMFIT ===== ===== =====\n    \n    pars = lmfit.Parameters()\n\n    pars.add('scale', value=last_scale, min=scaleup_factor / 10, max=scaleup_factor * 10)\n    pars.add('T', value=last_T, min=0, max=50)\n    pars.add('dk', value=last_dk, min=0, max=50)\n\n    # pars.add('scale', value=last_scale)\n    # pars.add('T', value=last_T)\n    # pars.add('dk', value=last_dk)\n\n    def residual(p):\n        return fit_func_w_dk_scale_T(low_noise_selected_w, p['scale'], p['T'], p['dk']) - low_noise_slice\n    mini = lmfit.Minimizer(residual, pars, nan_policy='propagate', calc_covar=True)\n\n    out1 = mini.minimize(method='nelder')\n    kwargs = {\"sigma\": np.sqrt(low_noise_slice)}\n    result = mini.minimize(method='leastsq', params=out1.params, args=kwargs)\n\n    lmfit_scale = result.params.get('scale').value\n    lmfit_T = result.params.get('T').value\n    lmfit_dk = result.params.get('dk').value\n\n    print(\"\\n\", lmfit.fit_report(result.params))\n    try:\n        print(result.covar)\n    except:\n        print('no covariance matrix')\n\n    # lmfit statistical results\n    print(\"manual redchi:\", \\\n        manualRedChi(low_noise_slice, \\\n            fit_func_w_dk_scale_T(low_noise_selected_w, lmfit_scale, lmfit_T, lmfit_dk), \\\n            low_noise_slice,\\\n            points_in_fit - 3))\n    # abbreviated --> don't redo lmfit for reduced model\n    lmfit_f_stat = manualFTest( \\\n        low_noise_slice, fit_func_w_scale_T(low_noise_selected_w, *scipy_red_params), 2, \\\n        fit_func_w_dk_scale_T(low_noise_selected_w, lmfit_scale, lmfit_T, lmfit_dk), 3,\n        low_noise_slice, points_in_fit\n    )\n    print(\"f test value:\", lmfit_f_stat)\n    print(\"p-value (of gap): \", scipy.stats.f.cdf(lmfit_f_stat, 3 - 2, points_in_fit - 3))\n\n    # lmfit plot\n    plt.plot(w, fit_func_w_dk_scale_T(w, lmfit_scale, lmfit_T, lmfit_dk), label='lmfit')\n    \n    \n    # plot\n    Norman_subplot.set_title(\"k ($A^{-1}$): \" + str(round(k[slice_k_index], 3)) + \" | dk estimate:\" + str(round(last_dk, 2)))\n    plt.vlines(w[fit_start_index], 0, min_fit_count, color='black')\n    plt.vlines(w[fit_end_index], 0, min_fit_count, color='black')\n    plt.xlabel('w (mev)')\n    plt.ylabel('counts')\n    plt.legend()\n    curr_index += 1\n\n    if slice_k_index == 16:\n        Norman_subplot.set_title(\"k ($A^{-1}$): \" + str(round(k[slice_k_index],3)) + \"(kf) | dk estimate:\" + str(round(last_dk, 2)), color='olive')\n\n    # EASY_PRINT_ARRAY\n    easy_print_array.append(last_dk)\n    easy_print_array.append(scipy_std_err)\n    easy_print_array.append(manualRedChi( \\\n        low_noise_slice, fit_func_w_scale_T_dk(low_noise_w, *scipy_full_params), \\\n        low_noise_slice, points_in_fit - 3))\n    easy_print_array.append(manualRedChi( \\\n        low_noise_slice, fit_func_w_scale_T_dk(low_noise_w, scaleup_factor / w_step, T, dk), \\\n        low_noise_slice, points_in_fit - 3))\n    easy_print_array.append(scipy.stats.f.cdf(scipy_f_stat, 3-2, points_in_fit-3))\n'''\n\ncurr_index = k_as_index(kf)+1 # +1 is to account for -1 at start\ngap_estimates = np.zeros(k_as_index(kf)+1)\nfor i in range(3):\n    curr_index -= 1\n    if (curr_index < 0): break\n    print('==============================================')\n    print('slice_k_index: ' + str(curr_index) + ' (' + str(k[curr_index]) + ')')\n    EDC = np.zeros(z_height)\n    curr_k = k[curr_index]\n\n    # IGNORE NOISY DATA\n    fit_start_index = -1\n    fit_end_index = -1\n\n    for i in range(z_height):\n        EDC[i] = Z[i][curr_index]\n        if fit_start_index == -1:\n            if EDC[i] >= min_fit_count:\n                fit_start_index = i\n        if EDC[i] >= min_fit_count:\n            fit_end_index = i\n\n    # SUFFICIENT ROOM FOR ENERGY CONV\n    min_indexes_from_edge = 3 * energy_conv_sigma / w_step\n    fit_start_index = int(max(fit_start_index, round(min_indexes_from_edge)))\n    fit_end_index = int(min(fit_end_index, round(z_height - 1 - min_indexes_from_edge)))\n    points_in_fit = fit_end_index - fit_start_index + 1  # include end point\n    # print(\"points in fit: \", points_in_fit)\n\n    # LOW NOISE SLICE CREATION\n    low_noise_slice = np.zeros(points_in_fit)\n    low_noise_w = np.zeros(points_in_fit)\n    for i in range(points_in_fit):\n        low_noise_slice[i]=Z[i+fit_start_index][curr_index]\n        low_noise_w[i] = w[i + fit_start_index]\n\n    # FUNCTION TO FIT (default, no gap, no a+c)\n    fit_func_w_scale_T_dk = partial(spectrum_slice_array, a=a, c=c, fixed_k=curr_k)\n    fit_func_w_scale_T = partial(spectrum_slice_array, dk = 0, a=a, c=c, fixed_k=curr_k)\n\n    nofe_fit_func_w_scale_T_dk = partial(spectrum_slice_array, a=extracted_a, c=extracted_c, fixed_k=curr_k)\n\n    # ===== ===== ===== SCIPY ===== ===== =====\n    # print(low_noise_slice)\n\n    scipy_full_params, scipy_full_pcov = scipy.optimize.curve_fit(fit_func_w_scale_T_dk,\n            low_noise_w, low_noise_slice, p0=[last_scale, last_T, last_dk], maxfev=2000,\n            bounds=([scaleup_factor / 10, 0., 0.], [scaleup_factor * 10, 50., 50.]),\n            sigma=np.sqrt(low_noise_slice))\n    scipy_red_params, scipy_red_pcov = scipy.optimize.curve_fit(fit_func_w_scale_T, low_noise_w,\n            low_noise_slice, p0=[last_scale, last_T], maxfev=2000, bounds=([scaleup_factor / 10, 0.],\n            [scaleup_factor * 10, 50.]), sigma=np.sqrt(low_noise_slice))\n\n    nofe_scipy_full_params, nofe_scipy_full_pcov = scipy.optimize.curve_fit(nofe_fit_func_w_scale_T_dk,\n            low_noise_w, low_noise_slice, p0=[last_scale, last_T, last_dk], maxfev=2000,\n            bounds=([scaleup_factor / 10, 0., 0.], [scaleup_factor * 10, 50., 50.]), sigma=np.sqrt(low_noise_slice))\n\n    last_scale = nofe_scipy_full_params[0]\n    last_T = nofe_scipy_full_params[1]\n    last_dk = nofe_scipy_full_params[2]\n    print(\"calculated dk (nofe):\", last_dk)\n    print(\"cheated dk (fe):\", scipy_full_params[2])\n\n    gap_estimates[curr_index] = last_dk\n\n    # COMPARE GAP SIZE ESTIMATE TO NUMBER OF SLICES SUGGESTED\n    curr_dk_guess = sum(gap_estimates) / (k_as_index(kf)-curr_index+1)\n    curr_k_start_suggestion = math.sqrt((-2*curr_dk_guess-extracted_c)/extracted_a)\n\nwhile (curr_k_start_suggestion < k[curr_index]):\n    curr_index-=1\n    if(curr_index<0): break\n    print('==============================================')\n    curr_k = k[curr_index]\n    print('slice_k_index: ' + str(curr_index) + ' (' + str(curr_k) + ')')\n    EDC = np.zeros(z_height)\n\n    # IGNORE NOISY DATA\n    fit_start_index = -1\n    fit_end_index = -1\n\n    for i in range(z_height):\n        EDC[i] = Z[i][curr_index]\n        if fit_start_index == -1:\n            if EDC[i] >= min_fit_count:\n                fit_start_index = i\n        if EDC[i] >= min_fit_count:\n            fit_end_index = i\n\n    # SUFFICIENT ROOM FOR ENERGY CONV\n    min_indexes_from_edge = 3 * energy_conv_sigma / w_step\n    fit_start_index = int(max(fit_start_index, round(min_indexes_from_edge)))\n    fit_end_index = int(min(fit_end_index, round(z_height - 1 - min_indexes_from_edge)))\n    points_in_fit = fit_end_index - fit_start_index + 1  # include end point\n\n    # LOW NOISE SLICE CREATION\n    low_noise_slice = np.zeros(points_in_fit)\n    low_noise_w = np.zeros(points_in_fit)\n    for i in range(points_in_fit):\n        low_noise_slice[i] = Z[i + fit_start_index][curr_index]\n        low_noise_w[i] = w[i + fit_start_index]\n\n    # FUNCTION TO FIT (default, no gap, no a+c)\n    fit_func_w_scale_T_dk = partial(spectrum_slice_array, a=a, c=c, fixed_k=curr_k)\n    fit_func_w_scale_T = partial(spectrum_slice_array, dk=0, a=a, c=c, fixed_k=curr_k)\n\n    nofe_fit_func_w_scale_T_dk = partial(spectrum_slice_array, a=extracted_a, c=extracted_c, fixed_k=curr_k)\n\n    # ===== ===== ===== SCIPY ===== ===== =====\n    scipy_full_params, scipy_full_pcov = scipy.optimize.curve_fit(fit_func_w_scale_T_dk, low_noise_w,\n                low_noise_slice, p0=[last_scale, last_T, last_dk], maxfev=2000,\n                bounds=([scaleup_factor / 10, 0., 0.], [scaleup_factor * 10, 50., 50.]),\n                sigma=np.sqrt(low_noise_slice))\n    scipy_red_params, scipy_red_pcov = scipy.optimize.curve_fit(fit_func_w_scale_T, low_noise_w, low_noise_slice,\n                p0=[last_scale, last_T], maxfev=2000,\n                bounds=([scaleup_factor / 10, 0.], [scaleup_factor * 10, 50.]), sigma=np.sqrt(low_noise_slice))\n\n    nofe_scipy_full_params, nofe_scipy_full_pcov = scipy.optimize.curve_fit(nofe_fit_func_w_scale_T_dk, low_noise_w,\n                low_noise_slice, p0=[last_scale, last_T, last_dk], maxfev=2000,\n                bounds=([scaleup_factor / 10, 0., 0.], [scaleup_factor * 10, 50., 50.]), sigma=np.sqrt(low_noise_slice))\n\n    last_scale = nofe_scipy_full_params[0]\n    last_T = nofe_scipy_full_params[1]\n    last_dk = nofe_scipy_full_params[2]\n    print(last_dk)\n\n    gap_estimates[curr_index] = last_dk\n\n    # COMPARE GAP SIZE ESTIMATE TO NUMBER OF SLICES SUGGESTED\n    curr_dk_guess = sum(gap_estimates) / (k_as_index(kf) - curr_index + 1)\n    curr_k_start_suggestion = math.sqrt((-2 * curr_dk_guess - extracted_c) / extracted_a)\n\nprint(\"final k index: \", curr_index)\nprint(gap_estimates)\nprint(curr_dk_guess)\n\n\n\n\n##################################################\n# SHOW PLOT\n##################################################\nplt.tight_layout()\n# plt.savefig('(11) Fitting EDCs.svg', format='svg')\nplt.show()\nprint('\\n\\n')\nfor element in easy_print_array:\n    print(element)\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/main.py b/main.py
+--- a/main.py	
++++ b/main.py	
+@@ -72,188 +72,6 @@
+ # np.savetxt("/Users/ianhu/Documents/ARPES CNN/Dataset 1 - c=-1000, sigma=15/"+str(round(dk,6))+".csv", Z, delimiter=",")
+ 
+ plt_index=2 # first plot is for spectrum
+-'''
+-for slice_k_index in short_k:
+-
+-    # ===== ===== ===== symmetrization testing ===== ===== ===== 
+-    if slice_k_index==k_as_index(kf):
+-        symmetrized_slice = np.zeros(z_height*2)
+-        symmetrized_w = np.zeros(z_height*2)
+-        for i in range(z_height):
+-            print('===')
+-            print(w[i])
+-            print(Z[i][slice_k_index])
+-            print(n(w[i]))
+-            symmetrized_slice[i] = Z[i][slice_k_index]# / n(w[i])
+-            symmetrized_w[i] = w[i]
+-        for i in range(z_height):
+-            symmetrized_slice[z_height+i] = Z[i][slice_k_index]# / n(w[i])
+-            symmetrized_w[z_height+i] = -w[i]
+-        # zipped_pairs = zip(symmetrized_w, symmetrized_slice)
+-
+-        # symmetrized_slice = [x for _, x in sorted(zipped_pairs)]
+-        # symmetrized_w.sort()
+-
+-    plt.plot(symmetrized_w, symmetrized_slice)
+-    plt.show()
+-    for i in range (z_height*2):
+-        print(symmetrized_w[i])
+-        print(symmetrized_slice[i])
+-    quit()
+-    # ===== ===== ===== ===== ===== 
+-    
+-    Norman_subplot = plt.subplot(1, num_plots, plt_index)
+-    plt_index+=1
+-    print('==============================================')
+-    print('slice_k_index: ' + str(slice_k_index) + ' (' + str(k[slice_k_index]) + ')')
+-    print('progress: ' + str(curr_index / short_k.size))
+-    EDC = np.zeros(z_height)
+-    curr_k = k[slice_k_index]
+-
+-    # IGNORE NOISY DATA
+-    fit_start_index=-1
+-    fit_end_index=-1
+-
+-    for i in range(z_height):
+-        EDC[i] = Z[i][slice_k_index]
+-        if fit_start_index == -1:
+-            if EDC[i] >= min_fit_count:
+-                fit_start_index=i
+-        if EDC[i] >= min_fit_count:
+-            fit_end_index=i
+-
+-    # SUFFICIENT ROOM FOR ENERGY CONV
+-    min_indexes_from_edge = 3*energy_conv_sigma/w_step
+-    fit_start_index = int(max(fit_start_index, round(min_indexes_from_edge)))
+-    fit_end_index = int(min(fit_end_index, round(z_height-1-min_indexes_from_edge)))
+-    points_in_fit = fit_end_index-fit_start_index+1 # include end point
+-
+-    # LOW NOISE SLICE CREATION
+-    low_noise_slice = np.zeros(points_in_fit)
+-    low_noise_w = np.zeros(points_in_fit)
+-    for i in range(points_in_fit):
+-        low_noise_slice[i]=Z[i+fit_start_index][slice_k_index]
+-        low_noise_w[i] = w[i + fit_start_index]
+-
+-    # FUNCTION TO FIT
+-    fit_func_w_scale_T_dk = partial(spectrum_slice_array, a=a, c=c, fixed_k=curr_k)
+-    fit_func_w_scale_T = partial(spectrum_slice_array, dk = 0, a=a, c=c, fixed_k=curr_k)
+-
+-    nofe_fit_func_w_scale_T_dk = partial(spectrum_slice_array, a=extracted_a, c=extracted_c, fixed_k=curr_k)
+-
+-    # ===== ===== ===== SCIPY ===== ===== =====
+-    scipy_full_params, scipy_full_pcov = scipy.optimize.curve_fit(fit_func_w_scale_T_dk, low_noise_w, low_noise_slice, p0=[last_scale, last_T, last_dk], maxfev=2000, bounds=([scaleup_factor / 10, 0., 0.], [scaleup_factor * 10, 50., 50.]), sigma=np.sqrt(low_noise_slice))
+-    scipy_red_params, scipy_red_pcov = scipy.optimize.curve_fit(fit_func_w_scale_T, low_noise_w, low_noise_slice, p0=[last_scale, last_T], maxfev=2000, bounds=([scaleup_factor / 10, 0.], [scaleup_factor * 10, 50.]), sigma=np.sqrt(low_noise_slice))
+-
+-    nofe_scipy_full_params, nofe_scipy_full_pcov = scipy.optimize.curve_fit(nofe_fit_func_w_scale_T_dk, low_noise_w, low_noise_slice, p0=[last_scale, last_T, last_dk], maxfev=2000, bounds=([scaleup_factor / 10, 0., 0.], [scaleup_factor * 10, 50., 50.]), sigma=np.sqrt(low_noise_slice))
+-
+-    last_scale = scipy_full_params[0]
+-    last_T = scipy_full_params[1]
+-    last_dk = scipy_full_params[2]
+-
+-    print("scipy full params: ", scipy_full_params)
+-    scipy_std_err = math.sqrt(scipy_full_pcov[2][2] / math.sqrt(points_in_fit))
+-    print("dk stderr +/- : " + str(scipy_std_err) + " (" + str(100 * scipy_std_err / last_dk) + "%)")
+-    print("scipy full pcov: \n", scipy_full_pcov)
+-
+-    print("nofe scipy full params: ", nofe_scipy_full_params)
+-
+-    # SCIPY STATISTICAL RESULTS
+-    print("DOF: ", points_in_fit-3)
+-    print("scipy redchi:", manualRedChi(\
+-        low_noise_slice, fit_func_w_scale_T_dk(low_noise_w, *scipy_full_params), \
+-        low_noise_slice, points_in_fit - 3))
+-    print("perfect redchi:", manualRedChi(\
+-        low_noise_slice, fit_func_w_scale_T_dk(low_noise_w, scaleup_factor / w_step, T, dk), \
+-        low_noise_slice, points_in_fit - 3))
+-
+-    scipy_f_stat = manualFTest(\
+-        low_noise_slice, fit_func_w_scale_T(low_noise_w, *scipy_red_params), 2, \
+-        fit_func_w_scale_T_dk(low_noise_w, *scipy_full_params), 3,
+-        low_noise_slice, points_in_fit
+-        )
+-    print("f test value:", scipy_f_stat)
+-    print("p-value (of gap): ", scipy.stats.f.cdf(scipy_f_stat, 3-2, points_in_fit-3))
+-
+-    # SCIPY PLOT
+-    plt.plot(w, fit_func_w_scale_T_dk(w, *scipy_full_params), label='Fitted curve')
+-    plt.plot(w, fit_func_w_scale_T_dk(w, scaleup_factor / w_step, T, dk), label='Perfect fit')
+-
+-    # DATA/REFERENCE PLOTS
+-    plt.plot(w, EDC, label='Data')
+-
+-    # ===== ===== ===== LMFIT ===== ===== =====
+-    
+-    pars = lmfit.Parameters()
+-
+-    pars.add('scale', value=last_scale, min=scaleup_factor / 10, max=scaleup_factor * 10)
+-    pars.add('T', value=last_T, min=0, max=50)
+-    pars.add('dk', value=last_dk, min=0, max=50)
+-
+-    # pars.add('scale', value=last_scale)
+-    # pars.add('T', value=last_T)
+-    # pars.add('dk', value=last_dk)
+-
+-    def residual(p):
+-        return fit_func_w_dk_scale_T(low_noise_selected_w, p['scale'], p['T'], p['dk']) - low_noise_slice
+-    mini = lmfit.Minimizer(residual, pars, nan_policy='propagate', calc_covar=True)
+-
+-    out1 = mini.minimize(method='nelder')
+-    kwargs = {"sigma": np.sqrt(low_noise_slice)}
+-    result = mini.minimize(method='leastsq', params=out1.params, args=kwargs)
+-
+-    lmfit_scale = result.params.get('scale').value
+-    lmfit_T = result.params.get('T').value
+-    lmfit_dk = result.params.get('dk').value
+-
+-    print("\n", lmfit.fit_report(result.params))
+-    try:
+-        print(result.covar)
+-    except:
+-        print('no covariance matrix')
+-
+-    # lmfit statistical results
+-    print("manual redchi:", \
+-        manualRedChi(low_noise_slice, \
+-            fit_func_w_dk_scale_T(low_noise_selected_w, lmfit_scale, lmfit_T, lmfit_dk), \
+-            low_noise_slice,\
+-            points_in_fit - 3))
+-    # abbreviated --> don't redo lmfit for reduced model
+-    lmfit_f_stat = manualFTest( \
+-        low_noise_slice, fit_func_w_scale_T(low_noise_selected_w, *scipy_red_params), 2, \
+-        fit_func_w_dk_scale_T(low_noise_selected_w, lmfit_scale, lmfit_T, lmfit_dk), 3,
+-        low_noise_slice, points_in_fit
+-    )
+-    print("f test value:", lmfit_f_stat)
+-    print("p-value (of gap): ", scipy.stats.f.cdf(lmfit_f_stat, 3 - 2, points_in_fit - 3))
+-
+-    # lmfit plot
+-    plt.plot(w, fit_func_w_dk_scale_T(w, lmfit_scale, lmfit_T, lmfit_dk), label='lmfit')
+-    
+-    
+-    # plot
+-    Norman_subplot.set_title("k ($A^{-1}$): " + str(round(k[slice_k_index], 3)) + " | dk estimate:" + str(round(last_dk, 2)))
+-    plt.vlines(w[fit_start_index], 0, min_fit_count, color='black')
+-    plt.vlines(w[fit_end_index], 0, min_fit_count, color='black')
+-    plt.xlabel('w (mev)')
+-    plt.ylabel('counts')
+-    plt.legend()
+-    curr_index += 1
+-
+-    if slice_k_index == 16:
+-        Norman_subplot.set_title("k ($A^{-1}$): " + str(round(k[slice_k_index],3)) + "(kf) | dk estimate:" + str(round(last_dk, 2)), color='olive')
+-
+-    # EASY_PRINT_ARRAY
+-    easy_print_array.append(last_dk)
+-    easy_print_array.append(scipy_std_err)
+-    easy_print_array.append(manualRedChi( \
+-        low_noise_slice, fit_func_w_scale_T_dk(low_noise_w, *scipy_full_params), \
+-        low_noise_slice, points_in_fit - 3))
+-    easy_print_array.append(manualRedChi( \
+-        low_noise_slice, fit_func_w_scale_T_dk(low_noise_w, scaleup_factor / w_step, T, dk), \
+-        low_noise_slice, points_in_fit - 3))
+-    easy_print_array.append(scipy.stats.f.cdf(scipy_f_stat, 3-2, points_in_fit-3))
+-'''
+ 
+ curr_index = k_as_index(kf)+1 # +1 is to account for -1 at start
+ gap_estimates = np.zeros(k_as_index(kf)+1)
+@@ -293,9 +111,6 @@
+ 
+     # FUNCTION TO FIT (default, no gap, no a+c)
+     fit_func_w_scale_T_dk = partial(spectrum_slice_array, a=a, c=c, fixed_k=curr_k)
+-    fit_func_w_scale_T = partial(spectrum_slice_array, dk = 0, a=a, c=c, fixed_k=curr_k)
+-
+-    nofe_fit_func_w_scale_T_dk = partial(spectrum_slice_array, a=extracted_a, c=extracted_c, fixed_k=curr_k)
+ 
+     # ===== ===== ===== SCIPY ===== ===== =====
+     # print(low_noise_slice)
+@@ -304,25 +119,13 @@
+             low_noise_w, low_noise_slice, p0=[last_scale, last_T, last_dk], maxfev=2000,
+             bounds=([scaleup_factor / 10, 0., 0.], [scaleup_factor * 10, 50., 50.]),
+             sigma=np.sqrt(low_noise_slice))
+-    scipy_red_params, scipy_red_pcov = scipy.optimize.curve_fit(fit_func_w_scale_T, low_noise_w,
+-            low_noise_slice, p0=[last_scale, last_T], maxfev=2000, bounds=([scaleup_factor / 10, 0.],
+-            [scaleup_factor * 10, 50.]), sigma=np.sqrt(low_noise_slice))
+ 
+-    nofe_scipy_full_params, nofe_scipy_full_pcov = scipy.optimize.curve_fit(nofe_fit_func_w_scale_T_dk,
+-            low_noise_w, low_noise_slice, p0=[last_scale, last_T, last_dk], maxfev=2000,
+-            bounds=([scaleup_factor / 10, 0., 0.], [scaleup_factor * 10, 50., 50.]), sigma=np.sqrt(low_noise_slice))
+-
+-    last_scale = nofe_scipy_full_params[0]
+-    last_T = nofe_scipy_full_params[1]
+-    last_dk = nofe_scipy_full_params[2]
+     print("calculated dk (nofe):", last_dk)
+-    print("cheated dk (fe):", scipy_full_params[2])
+ 
+     gap_estimates[curr_index] = last_dk
+ 
+     # COMPARE GAP SIZE ESTIMATE TO NUMBER OF SLICES SUGGESTED
+     curr_dk_guess = sum(gap_estimates) / (k_as_index(kf)-curr_index+1)
+-    curr_k_start_suggestion = math.sqrt((-2*curr_dk_guess-extracted_c)/extracted_a)
+ 
+ while (curr_k_start_suggestion < k[curr_index]):
+     curr_index-=1
+@@ -359,22 +162,12 @@
+ 
+     # FUNCTION TO FIT (default, no gap, no a+c)
+     fit_func_w_scale_T_dk = partial(spectrum_slice_array, a=a, c=c, fixed_k=curr_k)
+-    fit_func_w_scale_T = partial(spectrum_slice_array, dk=0, a=a, c=c, fixed_k=curr_k)
+-
+-    nofe_fit_func_w_scale_T_dk = partial(spectrum_slice_array, a=extracted_a, c=extracted_c, fixed_k=curr_k)
+ 
+     # ===== ===== ===== SCIPY ===== ===== =====
+     scipy_full_params, scipy_full_pcov = scipy.optimize.curve_fit(fit_func_w_scale_T_dk, low_noise_w,
+                 low_noise_slice, p0=[last_scale, last_T, last_dk], maxfev=2000,
+                 bounds=([scaleup_factor / 10, 0., 0.], [scaleup_factor * 10, 50., 50.]),
+                 sigma=np.sqrt(low_noise_slice))
+-    scipy_red_params, scipy_red_pcov = scipy.optimize.curve_fit(fit_func_w_scale_T, low_noise_w, low_noise_slice,
+-                p0=[last_scale, last_T], maxfev=2000,
+-                bounds=([scaleup_factor / 10, 0.], [scaleup_factor * 10, 50.]), sigma=np.sqrt(low_noise_slice))
+-
+-    nofe_scipy_full_params, nofe_scipy_full_pcov = scipy.optimize.curve_fit(nofe_fit_func_w_scale_T_dk, low_noise_w,
+-                low_noise_slice, p0=[last_scale, last_T, last_dk], maxfev=2000,
+-                bounds=([scaleup_factor / 10, 0., 0.], [scaleup_factor * 10, 50., 50.]), sigma=np.sqrt(low_noise_slice))
+ 
+     last_scale = nofe_scipy_full_params[0]
+     last_T = nofe_scipy_full_params[1]
+@@ -385,7 +178,6 @@
+ 
+     # COMPARE GAP SIZE ESTIMATE TO NUMBER OF SLICES SUGGESTED
+     curr_dk_guess = sum(gap_estimates) / (k_as_index(kf) - curr_index + 1)
+-    curr_k_start_suggestion = math.sqrt((-2 * curr_dk_guess - extracted_c) / extracted_a)
+ 
+ print("final k index: ", curr_index)
+ print(gap_estimates)
+Index: kf_from_norm_state.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from real_data import *\n\nnorm_state_Z = norm_state_I(X,Y)\nadd_noise(norm_state_Z)\n\n# find a, c from trajectory\ntrajectory = np.zeros(z_width)\n\nif(trajectory.size<=10):\n    raise RuntimeError('k width is too small')\n\nlorentz_scale_array=np.zeros(3)\nfermi_energy_extraction_stop=0\n\ntemp = 0\n\nfor slice_k_index in range(z_width):\n    norm_state_EDC = np.zeros(z_height)\n\n    # IGNORE NOISY DATA\n    norm_state_fit_start_index=-1\n    norm_state_fit_end_index=-1\n\n    for i in range(z_height):\n        norm_state_EDC[i] = norm_state_Z[i][slice_k_index]\n        if norm_state_fit_start_index == -1:\n            if norm_state_EDC[i] >= min_fit_count:\n                norm_state_fit_start_index = i\n        if norm_state_EDC[i] >= min_fit_count:\n            norm_state_fit_end_index = i\n\n    # SUFFICIENT ROOM FOR ENERGY CONV\n    min_indexes_from_edge = 3 * energy_conv_sigma / w_step\n    norm_state_fit_start_index = int(max(norm_state_fit_start_index, round(min_indexes_from_edge)))\n    norm_state_fit_end_index = int(min(norm_state_fit_end_index, round(z_height - 1 - min_indexes_from_edge)))\n    norm_state_points_in_fit = norm_state_fit_end_index - norm_state_fit_start_index + 1  # include end point\n\n    # LOW NOISE SLICE CREATION\n    norm_state_low_noise_slice = np.zeros(norm_state_points_in_fit)\n    norm_state_low_noise_w = np.zeros(norm_state_points_in_fit)\n    for i in range(norm_state_points_in_fit):\n        norm_state_low_noise_slice[i] = norm_state_Z[i + norm_state_fit_start_index][slice_k_index]\n        norm_state_low_noise_w[i] = w[i + norm_state_fit_start_index]\n\n    scipy_nofe_params, scipy_nofe_pcov = scipy.optimize.curve_fit(lorentz_form, norm_state_low_noise_w, norm_state_low_noise_slice, maxfev=3000)\n\n    # a is amplitude scale, b is position, c is width | stop if amplitude is much smaller than that far from fermi\n    if slice_k_index<3:\n        lorentz_scale_array[slice_k_index] = scipy_nofe_params[0]\n    elif (scipy_nofe_params[0] < 0.95 * np.average(lorentz_scale_array)):\n        fermi_energy_extraction_stop = slice_k_index\n        print(\"fe extraction ending at:\",slice_k_index)\n        break\n\n    # add to trajectory\n    trajectory[slice_k_index] = scipy_nofe_params[1]\n\n    temp+=1\n\nreduced_k = np.zeros(fermi_energy_extraction_stop)\nreduced_trajectory = np.zeros(fermi_energy_extraction_stop)\n\nfor i in range(fermi_energy_extraction_stop):\n    reduced_k[i] = k[i]\n    reduced_trajectory[i] = trajectory[i]\n\nscipy_trajectory_params, scipy_trajectory_pcov = scipy.optimize.curve_fit(e, reduced_k, reduced_trajectory)\n\nprint(\"extracted a:\", scipy_trajectory_params[0], \"extracted c:\", scipy_trajectory_params[1])\nprint(\"true a:\", a, \"| true c:\", c, \"\\n\")\n\nextracted_a = scipy_trajectory_params[0]\nextracted_c = scipy_trajectory_params[1]\n\nim = plt.imshow(norm_state_Z, cmap=plt.cm.RdBu, aspect='auto', extent=[min(k), max(k), min(w), max(w)], origin='lower')  # drawing the function\nplt.colorbar(im)\nplt.plot(reduced_k, e(reduced_k,a,c))\nplt.plot(reduced_k, reduced_trajectory)\nplt.title(\"Norm State Fit for a,c\")\nplt.show()\n\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/kf_from_norm_state.py b/kf_from_norm_state.py
+--- a/kf_from_norm_state.py	
++++ b/kf_from_norm_state.py	
+@@ -1,5 +1,5 @@
+ from real_data import *
+-
++'''
+ norm_state_Z = norm_state_I(X,Y)
+ add_noise(norm_state_Z)
+ 
+@@ -79,3 +79,4 @@
+ plt.title("Norm State Fit for a,c")
+ plt.show()
+ 
++'''
+\ No newline at end of file
