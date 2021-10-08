@@ -133,7 +133,7 @@ def norm_state_I(k, w):
 ##################################################
 # HEAT MAP
 ##################################################
-'''
+
 # k and w values for plotting
 X, Y = np.meshgrid(k, w)
 
@@ -145,4 +145,3 @@ add_noise(Z)
 z_width = Z[0].size
 z_height = int(Z.size / z_width)
 kf_index = k_as_index(kf)
-'''
