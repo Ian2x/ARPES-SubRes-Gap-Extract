@@ -41,6 +41,9 @@ def secondary_electron_contribution_array(w_array, p, q, r, s):
 
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> parent of 433c79d... CURRENT ERROR:
+=======
 >>>>>>> parent of 433c79d... CURRENT ERROR:
 =======
 >>>>>>> parent of 433c79d... CURRENT ERROR:
@@ -69,7 +72,10 @@ last_dk = 1
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> parent of 433c79d... CURRENT ERROR:
 =======
 >>>>>>> parent of 433c79d... CURRENT ERROR:
 
@@ -191,6 +197,9 @@ while EDCs_used_count < 3 or curr_k_start_suggestion < k[curr_index]:
                                                                 sigma=fitting_sigma)
     '''
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> parent of 433c79d... CURRENT ERROR:
+=======
 >>>>>>> parent of 433c79d... CURRENT ERROR:
 =======
 >>>>>>> parent of 433c79d... CURRENT ERROR:
@@ -240,7 +249,10 @@ print(gap_estimates)
 print(curr_dk_guess)
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> parent of 433c79d... CURRENT ERROR:
 =======
 >>>>>>> parent of 433c79d... CURRENT ERROR:
 
