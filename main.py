@@ -40,6 +40,9 @@ def secondary_electron_contribution_array(w_array, p, q, r, s):
 
 
 
+<<<<<<< HEAD
+>>>>>>> parent of 433c79d... CURRENT ERROR:
+=======
 >>>>>>> parent of 433c79d... CURRENT ERROR:
 # EDC slice function
 def spectrum_slice_array(w_array, p, q, r, s, scale, T, dk, a, c, fixed_k):
@@ -65,7 +68,10 @@ last_T = 1
 last_dk = 1
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> parent of 433c79d... CURRENT ERROR:
 
 # For copy-pasting results
 easy_print_array = []
@@ -184,6 +190,9 @@ while EDCs_used_count < 3 or curr_k_start_suggestion < k[curr_index]:
                                                                         [scaleup_factor * 10, 50.]),
                                                                 sigma=fitting_sigma)
     '''
+<<<<<<< HEAD
+>>>>>>> parent of 433c79d... CURRENT ERROR:
+=======
 >>>>>>> parent of 433c79d... CURRENT ERROR:
     # Plot fits
     plt.plot(w, fit_func_w_scale_T_dk(w, *scipy_full_params), label='Fitted curve')
@@ -230,7 +239,10 @@ print("final k index: ", curr_index)
 print(gap_estimates)
 print(curr_dk_guess)
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> parent of 433c79d... CURRENT ERROR:
 
 ##################################################
 # EXPERIMENTAL SECTION

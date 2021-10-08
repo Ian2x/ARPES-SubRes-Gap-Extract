@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="3e78887e-61d2-4035-a5ce-1643cb35cd91" name="Default Changelist" comment="CURRENT ERROR:&#10;TypeError: __array__() takes 1 positional argument but 2 were given" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="9/6/21_Version" />
+      </map>
+    </option>
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GitSEFilterConfiguration">
+    <file-type-list>
+      <filtered-out-file-type name="LOCAL_BRANCH" />
+      <filtered-out-file-type name="REMOTE_BRANCH" />
+      <filtered-out-file-type name="TAG" />
+      <filtered-out-file-type name="COMMIT_BY_MESSAGE" />
+    </file-type-list>
+  </component>
+  <component name="ProjectId" id="1paFRByDZZEkBurclxPpYKsga7F" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+  </component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/old" />
+    </key>
+  </component>
+  <component name="RunManager">
+    <configuration default="true" type="PythonConfigurationType" factoryName="Python">
+      <module name="ARPES-SubRes-Gap-Extract" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="true" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="main" type="PythonConfigurationType" factoryName="Python">
+      <module name="ARPES 2" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="$USER_HOME$/opt/anaconda3/envs/ARPES-Gap-Extraction/bin/python" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="3e78887e-61d2-4035-a5ce-1643cb35cd91" name="Default Changelist" comment="" />
+      <created>1615413285746</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1615413285746</updated>
+      <workItem from="1615413296628" duration="71628000" />
+      <workItem from="1619296778472" duration="340726000" />
+      <workItem from="1625882731669" duration="29591000" />
+      <workItem from="1626037787143" duration="24295000" />
+      <workItem from="1626195019178" duration="88844000" />
+      <workItem from="1626635438722" duration="7310000" />
+      <workItem from="1626999582323" duration="1312000" />
+      <workItem from="1627497445853" duration="45876000" />
+      <workItem from="1627943479092" duration="4876000" />
+      <workItem from="1627961419429" duration="82000" />
+      <workItem from="1627961566505" duration="139000" />
+      <workItem from="1627962182964" duration="6000" />
+      <workItem from="1628004295100" duration="79000" />
+      <workItem from="1628134767100" duration="1540000" />
+      <workItem from="1628694757794" duration="953000" />
+      <workItem from="1628697708715" duration="495000" />
+      <workItem from="1628698277081" duration="2486000" />
+      <workItem from="1628725305265" duration="228000" />
+      <workItem from="1628725573620" duration="762000" />
+      <workItem from="1628726401499" duration="2306000" />
+      <workItem from="1628731236405" duration="131000" />
+      <workItem from="1628731382719" duration="97000" />
+      <workItem from="1628731489200" duration="126000" />
+      <workItem from="1628731698388" duration="78000" />
+      <workItem from="1628732910711" duration="16515000" />
+      <workItem from="1629599766192" duration="8573000" />
+      <workItem from="1629732179586" duration="267000" />
+      <workItem from="1629828198713" duration="11000" />
+      <workItem from="1630854584427" duration="14869000" />
+      <workItem from="1631021448458" duration="19066000" />
+      <workItem from="1631499628446" duration="6543000" />
+      <workItem from="1631538718317" duration="39841000" />
+      <workItem from="1632160941551" duration="3857000" />
+      <workItem from="1632592173669" duration="29703000" />
+      <workItem from="1633056394206" duration="459000" />
+      <workItem from="1633066278860" duration="261000" />
+      <workItem from="1633205723569" duration="682000" />
+      <workItem from="1633278261577" duration="585000" />
+      <workItem from="1633302468121" duration="15507000" />
+      <workItem from="1633474736244" duration="6911000" />
+      <workItem from="1633673760065" duration="567000" />
+    </task>
+    <task id="LOCAL-00001" summary="8/13/21">
+      <created>1628910228387</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1628910228388</updated>
+    </task>
+    <task id="LOCAL-00002" summary="9/6/21">
+      <created>1630942797482</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1630942797482</updated>
+    </task>
+    <task id="LOCAL-00003" summary="9/12/21">
+      <created>1631499711343</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1631499711343</updated>
+    </task>
+    <task id="LOCAL-00004" summary="9/13/21">
+      <created>1631589735022</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1631589735022</updated>
+    </task>
+    <task id="LOCAL-00005" summary="Prepare to do pseudo-2D fit">
+      <created>1632889193283</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1632889193283</updated>
+    </task>
+    <task id="LOCAL-00006" summary="CURRENT ERROR:&#10;TypeError: __array__() takes 1 positional argument but 2 were given">
+      <created>1633307329391</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1633307329391</updated>
+    </task>
+    <task id="LOCAL-00007" summary="10/6/21">
+      <created>1633578942581</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1633578942581</updated>
+    </task>
+    <task id="LOCAL-00008" summary="9/6/21">
+      <created>1633579282119</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1633579282119</updated>
+    </task>
+    <task id="LOCAL-00009" summary="Eugen 10/8/21">
+      <created>1633673261223</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1633673261223</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="oldMeFiltersMigrated" value="true" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="8/13/21" />
+    <MESSAGE value="9/12/21" />
+    <MESSAGE value="9/13/21" />
+    <MESSAGE value="Prepare to do pseudo-2D fit" />
+    <MESSAGE value="CURRENT ERROR:&#10;TypeError: __array__() takes 1 positional argument but 2 were given" />
+    <MESSAGE value="10/6/21" />
+    <MESSAGE value="9/6/21" />
+    <MESSAGE value="Eugen 10/8/21" />
+    <option name="LAST_COMMIT_MESSAGE" value="Eugen 10/8/21" />
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/ARPES_SubRes_Gap_Extract$main.coverage" NAME="main Coverage Results" MODIFIED="1633580535889" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ARPES_2$main.coverage" NAME="main Coverage Results" MODIFIED="1631146526567" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+  </component>
+</project>
