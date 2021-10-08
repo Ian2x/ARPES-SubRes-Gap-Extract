@@ -152,16 +152,4 @@ add_noise(Z)
 
 z_width = Z[0].size
 z_height = int(Z.size / z_width)
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
 kf_index = k_as_index(kf)
-=======
-kf_index = k_as_index(kf)
->>>>>>> parent of 433c79d... CURRENT ERROR:
-=======
-kf_index = k_as_index(kf)
->>>>>>> parent of 433c79d... CURRENT ERROR:
-=======
-kf_index = k_as_index(kf)
->>>>>>> parent of 433c79d... CURRENT ERROR:

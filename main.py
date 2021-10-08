@@ -24,29 +24,7 @@ def energy_conv_integrand(integration_w, fixed_w, T, dk, a, c, fixed_k):
     return A_BCS(fixed_k, integration_w, a, c, dk, T) * R(math.fabs(integration_w - fixed_w), energy_conv_sigma) * n(
         integration_w)
 
-<<<<<<< HEAD
-=======
 
-# Secondary electron effect
-def secondary_electron_contribution_array(w_array, p, q, r, s):
-
-    return_array = np.zeros(w_array.size)
-
-    # p is scale-up factor (0, inf), q is horizontal shift (-inf, inf), r is steepness (-inf, 0]
-    for i in range(w_array.size):
-        return_array[i] = p / (1 + math.exp(r * w_array[i] - r * q)) + s
-
-    return return_array
-
-
-
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> parent of 433c79d... CURRENT ERROR:
-=======
->>>>>>> parent of 433c79d... CURRENT ERROR:
-=======
->>>>>>> parent of 433c79d... CURRENT ERROR:
 # EDC slice function
 def spectrum_slice_array(w_array, p, q, r, s, scale, T, dk, a, c, fixed_k):
     return_array = np.zeros(w_array.size)
@@ -70,19 +48,6 @@ last_scale = 1
 last_T = 1
 last_dk = 1
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-=======
->>>>>>> parent of 433c79d... CURRENT ERROR:
-=======
->>>>>>> parent of 433c79d... CURRENT ERROR:
-
-# For copy-pasting results
-easy_print_array = []
-
->>>>>>> parent of 433c79d... CURRENT ERROR:
 # Plot spectrum (Might need to do origin lower sometimes)
 im = plt.imshow(Z, cmap=plt.cm.RdBu, aspect='auto', extent=[min(k), max(k), min(w), max(w)])
 
@@ -127,7 +92,7 @@ while EDCs_used_count < 3 or curr_k_start_suggestion < k[curr_index]:
 
     for i in range(z_height):
         # Build EDC
-        EDC[i] = Z[z_height - 1 - i][curr_index] # CHANGED z_height-1-i => i
+        EDC[i] = Z[z_height - 1 - i][curr_index]  # CHANGED z_height-1-i => i
         # Start fit at first index greater than min_fit_count
         if fit_start_index == -1:
             if EDC[i] >= min_fit_count:
@@ -179,30 +144,14 @@ while EDCs_used_count < 3 or curr_k_start_suggestion < k[curr_index]:
 
     scipy_full_params, scipy_full_pcov = scipy.optimize.curve_fit(fit_func_w_scale_T_dk,
                                                                   low_noise_w, low_noise_slice,
-                                                                  p0=[last_p, last_q, last_r, last_s, last_scale, last_T,
+                                                                  p0=[last_p, last_q, last_r, last_s, last_scale,
+                                                                      last_T,
                                                                       last_dk], maxfev=2000,
                                                                   bounds=(
-                                                                  [300, -40, 0., 0, 1 / ONE_BILLION, 0., 0.],
-                                                                  [700, 10, 0.5, 200, ONE_BILLION, 75., 75.]),
+                                                                      [300, -40, 0., 0, 1 / ONE_BILLION, 0., 0.],
+                                                                      [700, 10, 1, 200, ONE_BILLION, 75., 75.]),
                                                                   sigma=fitting_sigma)
-<<<<<<< HEAD
-    
-=======
 
-    '''
-    scipy_red_params, scipy_red_pcov = scipy.optimize.curve_fit(fit_func_w_scale_T, low_noise_w,
-                                                                low_noise_slice, p0=[last_scale, last_T], maxfev=2000,
-                                                                bounds=([scaleup_factor / 10, 0.],
-                                                                        [scaleup_factor * 10, 50.]),
-                                                                sigma=fitting_sigma)
-    '''
-<<<<<<< HEAD
-<<<<<<< HEAD
->>>>>>> parent of 433c79d... CURRENT ERROR:
-=======
->>>>>>> parent of 433c79d... CURRENT ERROR:
-=======
->>>>>>> parent of 433c79d... CURRENT ERROR:
     # Plot fits
     plt.plot(w, fit_func_w_scale_T_dk(w, *scipy_full_params), label='Fitted curve')
     # plt.plot(w, fit_func_w_scale_T_dk(w, scaleup_factor / w_step, T, dk), label='Perfect fit')
@@ -232,11 +181,6 @@ while EDCs_used_count < 3 or curr_k_start_suggestion < k[curr_index]:
     print("dk:", scipy_full_params[6])
     print(scipy_full_params)
 
-
-
-
-
-
     # Save dk guess to array
     gap_estimates[curr_index] = last_dk
 
@@ -247,63 +191,3 @@ while EDCs_used_count < 3 or curr_k_start_suggestion < k[curr_index]:
 print("final k index: ", curr_index)
 print(gap_estimates)
 print(curr_dk_guess)
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-=======
->>>>>>> parent of 433c79d... CURRENT ERROR:
-=======
->>>>>>> parent of 433c79d... CURRENT ERROR:
-
-##################################################
-# EXPERIMENTAL SECTION
-##################################################
-'''
-p0=[last_q, last_r, last_s, last_scale, 
-last_T,
-
-     last_dk], maxfev=2000,
-   bounds=([0, -20, -ONE_BILLION, 1 / ONE_BILLION,
-   0., 0.],
-[ONE_BILLION, 20, 0, ONE_BILLION, 75., 75.]),
-
-'''
-pars = lmfit.Parameters()
-pars.add('p', value=last_p, min=400, max=800)
-pars.add('q', value=last_q, min=-40, max=10)
-pars.add('r', value=last_r, min=-ONE_BILLION, max=ONE_BILLION)
-pars.add('scale', value=last_scale, min=1 / ONE_BILLION, max=ONE_BILLION)
-pars.add('T', value=last_T, min=0., max=75)
-pars.add('dk', value=last_dk, min=0., max=75)
-
-momentum_to_fit = [k_as_index(kf, k), k_as_index(kf, k) - 5, k_as_index(kf, k) - 10]
-EDC_func_array = []
-low_noise_slices = []
-for i in range(momentum_to_fit.size):
-    EDC_func_array[i] = partial(spectrum_slice_array, a=a, c=c, fixed_k=momentum_to_fit[i])
-
-def residual(p):
-    residual = 0
-    for i in range(momentum_to_fit.size):
-        residual+=math.fabs(EDC_func_array[i](low_noise_w, p['q'], p['r'], p['s'], p['scale'], p['T'], p['dk']) - low_noise_slices[i])
-    return residual
-
-mini = lmfit.Minimizer(residual, pars, nan_policy='propagate', calc_covar=True)
-# out1 = mini.minimize(method='nelder')
-# kwargs = {"sigma": np.sqrt(low_noise_slice)}
-# result = mini.minimize(method='leastsq', params=out1.params, args=kwargs)
-result = mini.minimize(method='leastsq')
-lmfit_scale = result.params.get('scale').value
-lmfit_T = result.params.get('T').value
-lmfit_dk = result.params.get('dk').value
-##################################################
-# SHOW PLOT
-##################################################
-plt.tight_layout()
-# plt.savefig('(11) Fitting EDCs.svg', format='svg')
-plt.show()
-print('\n\n')
-for element in easy_print_array:
-    print(element)
->>>>>>> parent of 433c79d... CURRENT ERROR:
