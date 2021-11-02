@@ -1,8 +1,6 @@
-from control_panel import *
-
 import numpy as np
 import math
-
+import os
 ##################################################
 # GENERAL FUNCTIONS
 ##################################################
@@ -21,11 +19,11 @@ def R(dw, sigma):
     return (1 / sigma / math.sqrt(2 * math.pi)) * math.exp(-0.5 * (dw) ** 2 / sigma ** 2)
 
 
-R_vectorized = np.vectorize(R, excluded=['sigma'])
+R_vectorized = np.vectorize(R)
 
 
 # Energy Convolution to a Map
-def energy_convolution_map(k, w, main_func_k_w, conv_func_w, scaleup=scaleup_factor):
+def energy_convolution_map(k, w, a, c, dk, T, main_func_k_w, conv_func_w, scaleup, energy_conv_sigma):
     # k should be 2d
     height = math.floor(k.size / k[0].size)
     width = k[0].size
@@ -52,25 +50,9 @@ def energy_convolution_map(k, w, main_func_k_w, conv_func_w, scaleup=scaleup_fac
             # 1D array of w at point (i, j) (in numpy coordinates); w is used to find dw
             curr_w = np.full(inv_w[j].size, w[i][j])
             # Energy convolution to find final intensity at point (i, j)
-            res = np.convolve(scaleup * main_func_k_w(inv_k[j], inv_w[j]),
+            res = np.convolve(scaleup * main_func_k_w(inv_k[j], inv_w[j], a, c, dk, T),
                               conv_func_w(rev_inv_w[j] - curr_w, energy_conv_sigma), mode='valid')
             results[i][j] = res
-
-    return results
-
-
-# Energy Convolution to an array
-def energy_convolution(w, main_func, conv_func):
-    results = np.zeros(w.size)
-
-    # Flip vertically
-    rev_w = np.flip(w)
-
-    #
-    for i in range(w.size):
-        curr_w = np.full(w.size, w[i])
-        res = np.convolve(main_func(w), conv_func(rev_w - curr_w), mode='valid')
-        results[i] = res
 
     return results
 
@@ -82,18 +64,6 @@ def add_noise(map):
     for i in range(height):
         for j in range(width):
             map[i][j] = np.random.poisson(map[i][j])
-            '''
-            if map[i][j] < 1:
-                map[i][j] = 1
-            else:
-                map[i][j] = np.random.poisson(map[i][j])
-                if map[i][j] == 0:
-                    map[i][j] = 1
-
-            # ensure no 0's for error sigma (for fitting)
-            if map[i][j] < 1:
-                map[i][j] = 1
-            '''
     return
 
 
