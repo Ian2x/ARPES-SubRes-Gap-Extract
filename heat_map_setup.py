@@ -22,13 +22,13 @@ kf = 0.5092958179 * brillouin_k  # 0.5092958179
 kf = 0.4
 
 # Normal-state Dispersion Variables (ak^2+c)
-c = -1000  # min(-50*dk, -50) # typically -1000 to -10,000 mev
-a = -c / (kf ** 2)
+true_c = -1000  # min(-50*dk, -50) # typically -1000 to -10,000 mev
+true_a = -true_c / (kf ** 2)
 # ------------------------------------------------
 # [Energy pixel step size]
-w_step = 1.5
+w_step = 1
 # [Energy detectors array]
-w = np.arange(-250, 125, w_step)
+w = np.arange(-125, 50, w_step)
 
 
 # w: (-45, 20), k: (-0.0125, 0.125)
@@ -117,7 +117,7 @@ def Io(k):
 
 # Full Composition Function (Knows a, c, dk, and T)
 def Io_n_A_BCS(k, w):
-    return Io(k) * n_vectorized(w) * A_BCS(k, w, a, c, dk, T)
+    return Io(k) * n_vectorized(w) * A_BCS(k, w, true_a, true_c, dk, T)
 
 
 def Io_n_A_BCS_2(k, w):
@@ -131,7 +131,7 @@ def I(k, w):
 
 # Normal-state Composition Function (dk=0, knows a, c, and T)
 def norm_state_Io_n_A_BCS(k, w):
-    return Io(k) * n_vectorized(w) * A_BCS(k, w, a, c, 0, T)
+    return Io(k) * n_vectorized(w) * A_BCS(k, w, true_a, true_c, 0, T)
 
 
 # Normal-state Intensity (dk=0, knows a, c, and T)
@@ -141,6 +141,8 @@ def norm_state_I(k, w):
 ##################################################
 # HEAT MAP
 ##################################################
+
+w = np.flip(w)
 
 # k and w values for plotting
 X, Y = np.meshgrid(k, w)

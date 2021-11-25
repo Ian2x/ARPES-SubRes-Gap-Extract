@@ -5,7 +5,7 @@ import random
 ##################################################
 
 # [Gap Size]: typically 0-40 meV
-dk = 5
+dk = 15
 
 # [Energy Resolution]: typically 2-50 meV
 energy_conv_sigma = 8

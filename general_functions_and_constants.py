@@ -66,7 +66,6 @@ def energy_convolution(w, main_func, conv_func):
     # Flip vertically
     rev_w = np.flip(w)
 
-    #
     for i in range(w.size):
         curr_w = np.full(w.size, w[i])
         res = np.convolve(main_func(w), conv_func(rev_w - curr_w), mode='valid')
@@ -110,6 +109,18 @@ def n(w, uP=0, temp=60):
 n_vectorized = np.vectorize(n)
 
 
+# Secondary electron effect
+def secondary_electron_contribution_array(w_array, p, q, r, s):
+
+    return_array = np.zeros(w_array.size)
+
+    # p is scale-up factor (0, inf), q is horizontal shift (-inf, inf), r is steepness (-inf, 0]
+    for i in range(w_array.size):
+        return_array[i] = p / (1 + math.exp(r * w_array[i] - r * q)) + s
+
+    return return_array
+
+
 # Reduced-Chi Calculation
 def manualRedChi(data, fit, absSigmaSquared, DOF=1):
     res = 0
@@ -141,6 +152,11 @@ def gaussian_form(x, a, b, c):
 # Lorentz Function
 def lorentz_form(x, a, b, c):
     return a * c / ((x - b) ** 2 + c ** 2)
+
+
+# Lorentz Function w/ Shift
+def lorentz_form_shifted(x, a, b, c, d):
+    return a * c / ((x - b) ** 2 + c ** 2) + d
 
 
 # Parabola (No Horizontal Shift)
