@@ -1,12 +1,11 @@
 from real_data import *
 
-
 ##################################################
 # EXTRACT GAP - TRAJECTORY
 ##################################################
 
 def lorentz_form_w_secondary_electrons(x, a, b, c, p, q, r, s):
-    lorentz = lorentz_form(x, a, b, c)
+    lorentz = lorentz_form(x, a, b, c, 0)
     secondary = secondary_electron_contribution_array(x, p, q, r, s)
     output = np.zeros(len(x))
     for i in range(len(x)):
@@ -16,6 +15,17 @@ def lorentz_form_w_secondary_electrons(x, a, b, c, p, q, r, s):
 
 inv_Z = np.array([list(i) for i in zip(*Z)])
 super_state_trajectory = np.zeros(z_width)
+relative_scale_factors = np.zeros(z_width)
+
+for i in range(0, z_width):
+    relative_scale_factors[i] = sum(inv_Z[i])
+
+relative_scale_factors_normalization_factor = sum(relative_scale_factors) / len(relative_scale_factors)
+
+relative_scale_factors /= relative_scale_factors_normalization_factor
+print(relative_scale_factors)
+print(len(relative_scale_factors))
+
 '''
 # account for fermi distribution and energy convolution
 def lorentz_convolved_trajectory_integrand(w_prime, fixed_w, a, b, c):
@@ -43,10 +53,13 @@ last_s = initial_ac_estimate_params[6]
 
 super_state_trajectory[0] = last_b
 
+relative_scale_factors2= np.zeros(z_width)
+relative_scale_factors2[0] = last_a
+
 # end_index = None
 # minimum_trace_stop_energy = -10  # mev
 # minimum_trace_width_fraction = 0.5
-for i in range(1, z_width - 1):  # width
+for i in range(1, z_width):  # width
     fit_params_loop, pcov_loop = scipy.optimize.curve_fit(lorentz_form_w_secondary_electrons, w, inv_Z[i],
                                                           p0=(last_a, last_b, last_c, last_p, last_q, last_r, last_s),
                                                           maxfev=1000)
@@ -64,11 +77,14 @@ for i in range(1, z_width - 1):  # width
     last_r = fit_params_loop[5]
     last_s = fit_params_loop[6]
     super_state_trajectory[i] = last_b
+
+    relative_scale_factors2[i] = last_a
     '''
     plt.plot(w, inv_Z[i])
     plt.plot(w, lorentz_form_w_secondary_electrons(w, *fit_params_loop))
     plt.show()
     '''
+relative_scale_factors = relative_scale_factors2
 
 # fractional_k = np.zeros(end_index)
 # fractional_super_state_trajectory = np.zeros(end_index)
@@ -107,4 +123,3 @@ print("INITIAL AC PARAMS [a, c, dk, k shift:")
 print(initial_ac_estimate_params)
 print("\nINITIAL KF ESTIMATE:")
 print(initial_kf_estimate)
-# TODO: Try getting kf by fitting MDC at fermi energy

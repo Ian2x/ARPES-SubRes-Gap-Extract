@@ -1,7 +1,7 @@
 import random
 
 ##################################################
-# CONTROL PANEL
+# SIMULATION CONTROL PANEL
 ##################################################
 
 # [Gap Size]: typically 0-40 meV

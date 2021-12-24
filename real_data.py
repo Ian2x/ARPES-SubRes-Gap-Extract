@@ -60,10 +60,10 @@ plt.show()
 
 # 250, 100, 20, 260 for near node
 # 60, 100, 30, 340 for far off node
-z_height = 110
-z_width = 132
-height_offset = 0
-width_offset = 300
+z_height = 70 # from 110
+z_width = 112
+height_offset = 40 # from 0
+width_offset = 305
 
 temp_k = np.zeros(z_width)
 temp_w = np.zeros(z_height)
@@ -107,3 +107,8 @@ print(fermi_energy_kf_extraction_params[1])
 plt.plot(k, mirrored_lorentz(k, *fermi_energy_kf_extraction_params))
 plt.show()
 '''
+invZ = np.array([list(i) for i in zip(*Z)])
+
+plt.plot(w, invZ[56])
+plt.show()
+quit()

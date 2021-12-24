@@ -1,6 +1,6 @@
-from extract_gap_by_trajectory import *
+from extract_Tscale_by_EDCs import *
 
-#TODO: fit ignoring quasiparticle data, make scale independent for different momenta
+#TODO: 1) get a and c estimate with trajectory fit
 
 # fit from -kf to -stop, stop to kf; unless stop such that should do -kf to kf
 # rescale to make scale approx. same
@@ -21,124 +21,6 @@ plt.colorbar(im)
 plt.plot(k, trajectory_form(k, initial_a_estimate, initial_c_estimate, initial_dk_estimate))
 plt.show()
 
-##################################################
-# EDC FITTING FUNCTIONS
-##################################################
-
-# NORMAN TECHNIQUE
-
-# Requires knowledge of temperature and energy resolution --> should test resilience of these
-# Also no k convolution
-
-# Integrand of energy convolution integral
-def energy_conv_integrand(integration_w, fixed_w, T, dk, a, c, fixed_k):
-    return A_BCS(fixed_k, integration_w, a, c, dk, T) * R(math.fabs(integration_w - fixed_w), energy_conv_sigma) * n(
-        integration_w)
-
-
-# EDC slice function
-def spectrum_slice_array(w_array, scale, T, dk, p, q, r, s, a, c, fixed_k):
-    return_array = np.zeros(w_array.size)
-    for i in range(w_array.size):
-        return_array[i] = scale * scipy.integrate.quad(energy_conv_integrand, w_array[i] - 250, w_array[i] + 250,
-                                                       args=(w_array[i], T, dk, a, c, fixed_k))[0]
-    # add in secondary electrons
-    secondary = secondary_electron_contribution_array(w_array, p, q, r, s)
-    for i in range(w_array.size):
-        return_array[i] = return_array[i] + secondary[i]
-    return return_array
-
-
-def EDC_prep(curr_index):
-    # Energy Distribution Curve (slice data)
-    EDC = np.zeros(z_height)
-
-    # Ignore noisy data
-    fit_start_index = -1
-    fit_end_index = -1
-
-    peak = 0
-    peak_index=0
-    min = np.inf
-    min_index = 0
-
-    for i in range(z_height):
-
-        # Build EDC
-        EDC[i] = Z[z_height - 1 - i][curr_index]
-
-        # Start fit at first index greater than min_fit_count
-        if fit_start_index == -1:
-            if EDC[i] >= min_fit_count:
-                fit_start_index = i
-        # End fit at at last index less than min_fit_count
-        if EDC[i] >= min_fit_count:
-            fit_end_index = i
-
-        if EDC[i] > peak:
-            peak = EDC[i]
-            peak_index = i
-
-    for i in range(peak_index):
-        if EDC[i] < min:
-            min = EDC[i]
-            min_index = i
-    '''
-    # UNNECESSARY FOR REAL DATA
-    # Check that there is sufficient room for energy convolution 
-    min_indexes_from_edge = 3 * energy_conv_sigma / w_step
-    if round(min_indexes_from_edge) > fit_start_index:
-        print("WARNING: Insufficient room for energy conv on top; pushed fit start down")
-        fit_start_index = round(min_indexes_from_edge)
-    if round(z_height - 1 - min_indexes_from_edge) < fit_end_index:
-        print("WARNING: Insufficient room for energy conv on bottom; pushed fit end up")
-        fit_end_index = round(z_height - 1 - min_indexes_from_edge)
-    '''
-    for i in range(peak_index, z_height):
-        if EDC[i] > (peak + min) / 2:
-            peak_index += 1
-
-    one_side_w = np.zeros(peak_index)
-    one_side_EDC = np.zeros(peak_index)
-
-    for i in range(peak_index):
-        one_side_w[i] = w[z_height - i - 1]
-        one_side_EDC[i] = EDC[i]
-    # print(one_side_w)
-    # print(one_side_EDC)
-
-
-
-    temp_fit_params, temp_fit_pcov = scipy.optimize.curve_fit(lorentz_form_shifted, one_side_w, one_side_EDC, bounds=([3 * (peak-min), -100, 0, 0.5 * min],[7 * (peak-min), 0, 100, 1.5 * min]))
-    # plt.plot(one_side_w, one_side_EDC)
-    # plt.plot(one_side_w, lorentz_form_shifted(one_side_w, *temp_fit_params))
-    # plt.vlines(temp_fit_params[1] - 1.5 * temp_fit_params[2], 350, 450)
-    # plt.show()
-    fit_start_index = max(fit_start_index, w_as_index(temp_fit_params[1] - 1.5 * temp_fit_params[2] , w))
-
-    # Points included in fit
-    points_in_fit = fit_end_index - fit_start_index + 1  # include end point
-    if points_in_fit < 5:
-        print("Accepted points: ", points_in_fit)
-        print("fit_start_index: ", fit_start_index)
-        print("fit_end_index: ", fit_end_index)
-        raise RuntimeError(
-            "ERROR: Not enough points to do proper EDC fit. Suggestions: expand upper/lower energy bounds or increase gap size")
-
-    # Create slice w/ low noise points
-    low_noise_slice = np.zeros(points_in_fit)
-    low_noise_w = np.zeros(points_in_fit)
-    w_reversed = np.flip(w)
-    for i in range(points_in_fit):
-        low_noise_slice[i] = EDC[i + fit_start_index]
-        low_noise_w[i] = w_reversed[i + fit_start_index]
-
-    # Remove 0s from fitting sigma
-    fitting_sigma = np.sqrt(low_noise_slice)
-    for i in range(len(fitting_sigma)):
-        if fitting_sigma[i] <= 0:
-            fitting_sigma[i] = 1
-    return (low_noise_w, low_noise_slice, fitting_sigma, points_in_fit, fit_start_index, fit_end_index)
 
 ##################################################
 # GET INITIAL GAP SIZE ESTIMATE --> WIDTH OF 2D FIT
@@ -175,15 +57,18 @@ initial_dk_estimate = scipy_full_params[2]
 left_shift_mult = 2
 
 # [Fit Start Momentum]: Momentum to start fit (not indexed)
-fit_start_k = math.sqrt((-left_shift_mult * initial_dk_estimate - initial_c_estimate) / initial_a_estimate)
+try:
+    fit_start_k = math.sqrt((-left_shift_mult * initial_dk_estimate - initial_c_estimate) / initial_a_estimate)
+except ValueError:
+    fit_start_k = 0
+    print("Able to fit momenta through k=0")
 # fit_start_k = math.sqrt((-left_shift_mult * dk - c) / a)
-print(fit_start_k)
-quit()
+# quit()
 
-fit_start_k = -initial_kf_estimate
+# fit_start_k = -initial_kf_estimate
 
-print('fit_start_k (not indexed): ', -initial_kf_estimate)
-print('fit_start_k (indexed): ', k_as_index(fit_start_k, k))
+# print('fit_start_k (not indexed): ', -initial_kf_estimate)
+# print('fit_start_k (indexed): ', k_as_index(fit_start_k, k))
 
 # Plot spectrum
 '''
@@ -200,10 +85,14 @@ plt.show()
 # 2D Fit (LMFIT)
 ##################################################
 
+# def spectrum_slice_array(w_array, scale, T, dk, a, c, fixed_k):
+#     return_array = np.zeros(w_array.size)
+#     for i in range(w_array.size):
+#         return_array[i] = scale * scipy.integrate.quad(energy_conv_integrand, w_array[i] - 250, w_array[i] + 250,
+#                                                        args=(w_array[i], T, dk, a, c, fixed_k))[0]
+#     return return_array
+
 pars = lmfit.Parameters()
-# pars.add('p', min=400, max=800)
-# pars.add('q', min=-40, max=10)
-# pars.add('r', min=-ONE_BILLION, max=ONE_BILLION)
 pars.add('scale', value=scipy_full_params[0], min=1 / ONE_BILLION, max=ONE_BILLION)
 pars.add('T', value=scipy_full_params[1], min=0, max=75)
 pars.add('dk', value=scipy_full_params[2], min=0, max=75)
@@ -214,13 +103,14 @@ pars.add('s', value=initial_s_estimate, min=0, max=100)
 pars.add('a', value=initial_a_estimate, min=0, max=np.inf)
 pars.add('c', value=initial_c_estimate, min=-np.inf, max=0)
 
-max_fit_start_index = k_as_index(kf, k) - 2
-target_fit_start_index = k_as_index(fit_start_k, k)
-if max_fit_start_index < target_fit_start_index:
-    print("ERROR PRONE ZONE, LOW FITTING SPOTS USED")
-    target_fit_start_index = max_fit_start_index
+# max_fit_start_index = k_as_index(kf, k) - 2
+# target_fit_start_index = k_as_index(fit_start_k, k)
+# if max_fit_start_index < target_fit_start_index:
+#     print("ERROR PRONE ZONE, LOW FITTING SPOTS USED")
+#     target_fit_start_index = max_fit_start_index
 
-momentum_to_fit = [*range(target_fit_start_index, k_as_index(kf, k), 15)]
+momentum_to_fit = [*range(k_as_index(-initial_kf_estimate, k), k_as_index(-fit_start_k, k), 30)] + [*range(k_as_index(fit_start_k, k), k_as_index(initial_kf_estimate, k), 30)]
+print(momentum_to_fit)
 
 EDC_func_array = []
 low_noise_slices = []
@@ -231,12 +121,19 @@ for i in range(len(momentum_to_fit)):
     low_noise_slices.append(temp_low_noise_slice)
     EDC_func_array.append(partial(spectrum_slice_array, fixed_k=k[momentum_to_fit[i]]))
 
-print(momentum_to_fit)
+short_relative_scale_factors = np.zeros(len(momentum_to_fit))
+for i in range(len(momentum_to_fit)):
+    short_relative_scale_factors[i] = relative_scale_factors[momentum_to_fit[i]]
+short_relative_scale_factors_normalization_factor = sum(short_relative_scale_factors) / len(short_relative_scale_factors)
+short_relative_scale_factors /= short_relative_scale_factors_normalization_factor
+
+
 
 def residual(p):
     residual = np.zeros(0)
     for i in range(len(momentum_to_fit)):
-        EDC_residual = EDC_func_array[i](low_noise_ws[i], p['scale'], p['T'], p['dk'], p['p'], p['q'], p['r'], p['s'], p['a'], p['c']) - low_noise_slices[i]
+        EDC_residual = short_relative_scale_factors[i]*EDC_func_array[i](low_noise_ws[i], p['scale'], p['T'], p['dk'], p['p'], p['q'], p['r'], p['s'], p['a'], p['c']) - low_noise_slices[i]
+        # EDC_residual = short_relative_scale_factors[i]*EDC_func_array[i](low_noise_ws[i], p['scale'], p['T'], p['dk'], p['a'], p['c']) - low_noise_slices[i]
         residual = np.concatenate((residual, EDC_residual))
     return residual
 
@@ -261,9 +158,10 @@ lmfit_c = result.params.get('c').value
 
 
 for i in range(len(momentum_to_fit)):
-    plt.title("momentum: " + k[momentum_to_fit[i]])
+    plt.title("momentum: " + str(k[momentum_to_fit[i]]))
     plt.plot(low_noise_ws[i], low_noise_slices[i], label='data')
-    plt.plot(low_noise_ws[i], EDC_func_array[i](low_noise_ws[i], lmfit_scale, lmfit_T, lmfit_dk, lmfit_p, lmfit_q, lmfit_r, lmfit_s, lmfit_a, lmfit_c), label='fit')
+    plt.plot(low_noise_ws[i], short_relative_scale_factors[i]*EDC_func_array[i](low_noise_ws[i], lmfit_scale, lmfit_T, lmfit_dk, lmfit_p, lmfit_q, lmfit_r, lmfit_s, lmfit_a, lmfit_c), label='fit')
+    # plt.plot(low_noise_ws[i], short_relative_scale_factors[i]*EDC_func_array[i](low_noise_ws[i], lmfit_scale, lmfit_T, lmfit_dk, lmfit_a, lmfit_c), label='fit')
     plt.show()
 
 '''

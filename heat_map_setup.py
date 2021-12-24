@@ -35,8 +35,13 @@ w = np.arange(-125, 50, w_step)
 # w: (-100, 40), k: (-0.03, 0.025)
 # w: (-400, 0), k: (-0.05, 0.025)
 
-# Convert w in meV to corresponding index
-def w_as_index(input_w, w=w):
+def w_as_index(input_w, w):
+    '''
+    Convert w in meV to corresponding index
+    :param input_w: w to convert
+    :param w: energy array
+    :return: index in w corresponding to input_w
+    '''
     return int(round((input_w - min(w)) / (max(w) - min(w)) * (w.size - 1)))
 
 
@@ -52,8 +57,13 @@ k = np.arange(kf - 0.04 * kf, kf + 0.04 * kf, k_step)
 print("k_step: " + str(k_step) + " | mink: " + str(min(k)) + " | maxk: " + str(max(k)) + " | #steps: " + str(k.size))
 
 
-# Convert k in A^-1 to corresponding index
 def k_as_index(input_k, k=k):
+    '''
+    Convert k in A^-1 to corresponding index
+    :param input_k: k to convert
+    :param k: momentum array
+    :return: index in k corresponding to input_k
+    '''
     return int(round((input_k - min(k)) / (max(k) - min(k)) * (k.size - 1)))
 
 
@@ -61,18 +71,38 @@ def k_as_index(input_k, k=k):
 # DISPERSION MAIN FUNCTIONS
 ##################################################
 
-# Normal Dispersion
 def e(k, a, c):
+    '''
+    Normal Dispersion
+    :param k: momentum
+    :param a: a
+    :param c: c
+    :return: value
+    '''
     return a * k ** 2 + c
 
 
-# Superconducting Dispersion
 def E(k, a, c, dk):
+    '''
+    Superconducting Dispersion
+    :param k: momentum
+    :param a: a
+    :param c: c
+    :param dk: gap size
+    :return: value
+    '''
     return (e(k, a, c) ** 2 + dk ** 2) ** 0.5
 
 
-# Coherence Factors (relative intensity of BQP bands above and below EF)
 def u(k, a, c, dk):
+    '''
+    Coherence Factor (relative intensity of BQP bands above EF)
+    :param k: momentum
+    :param a: a
+    :param c: c
+    :param dk: gap size
+    :return: value
+    '''
     if (dk == 0):
         if (a * k ** 2 + c > 0):
             return 1
@@ -87,14 +117,30 @@ u_vectorized = np.vectorize(u)
 
 
 def v(k, a, c, dk):
-    # return 1 - u(k, a, c, dk)
+    '''
+    Coherence Factors (relative intensity of BQP bands below EF)
+    :param k: momentum
+    :param a: a
+    :param c: c
+    :param dk: gap size
+    :return: value
+    '''
     return 1 - u(k, a, c, dk)
 
 v_vectorized = np.vectorize(v)
 
 
-# BCS Spectral Function (https://arxiv.org/pdf/cond-mat/0304505.pdf) (non-constant gap)
 def A_BCS(k, w, a, c, dk, T):
+    '''
+    BCS Spectral Function (https://arxiv.org/pdf/cond-mat/0304505.pdf) (non-constant gap)
+    :param k: momentum
+    :param w: energy
+    :param a: a
+    :param c: c
+    :param dk: gap size
+    :param T: single-particle scattering rate
+    :return: value
+    '''
     return (1 / math.pi) * (
             u(k, a, c, dk) * T / ((w - E(k, a, c, dk)) ** 2 + T ** 2) + v(k, a, c, dk) * T / (
             (w + E(k, a, c, dk)) ** 2 + T ** 2))
@@ -105,46 +151,72 @@ def A_BCS(k, w, a, c, dk, T):
     '''
 
 
-# (http://ex7.iphy.ac.cn/downfile/32_PRB_57_R11093.pdf)
 def A_BCS_2(k, w, dk=dk, T=T):
+    '''
+    Alternative Spectral Function - broken
+    (http://ex7.iphy.ac.cn/downfile/32_PRB_57_R11093.pdf)
+    :param k: momentum
+    :param w: energy
+    :param dk: gap size
+    :param T: single-particle scattering rate
+    :return: value
+    '''
     return T / math.pi / ((w - e(k) - (dk ** 2) / (w + e(k))) ** 2 + T ** 2)
 
 
-# Intensity Pre-factor
 def Io(k):
+    '''
+    Intensity Pre-factor. Typically a function of k but approximate as 1
+    :param k: momentum
+    :return: value
+    '''
     return 1;
 
 
-# Full Composition Function (Knows a, c, dk, and T)
 def Io_n_A_BCS(k, w):
+    '''
+    Full Composition Function. Knows true a, c, dk, and T (ONLY meant to be used with simulated data)
+    :param k:
+    :param w:
+    :return:
+    '''
     return Io(k) * n_vectorized(w) * A_BCS(k, w, true_a, true_c, dk, T)
 
 
-def Io_n_A_BCS_2(k, w):
-    return Io(k) * n_vectorized(w) * A_BCS_2(k, w)
-
-
-# Intensity
 def I(k, w):
+    '''
+    Final Intensity (ONLY meant to be used with simulated data)
+    :param k: momentum
+    :param w: energy
+    :return: value
+    '''
     return energy_convolution_map(k, w, Io_n_A_BCS, R_vectorized, scaleup_factor)
 
 
-# Normal-state Composition Function (dk=0, knows a, c, and T)
 def norm_state_Io_n_A_BCS(k, w):
+    '''
+    Normal-state Composition Function (dk=0, knows a, c, and T) (ONLY meant to be used with simulated data)
+    :param k: momentum
+    :param w: energy
+    :return: value
+    '''
     return Io(k) * n_vectorized(w) * A_BCS(k, w, true_a, true_c, 0, T)
 
 
-# Normal-state Intensity (dk=0, knows a, c, and T)
 def norm_state_I(k, w):
+    '''
+    Final Normal-state Intensity (dk=0, knows a, c, and T) (ONLY meant to be used with simulated data)
+    :param k: momentum
+    :param w: energy
+    :return: value
+    '''
     return energy_convolution_map(k, w, norm_state_Io_n_A_BCS, R_vectorized, scaleup_factor)
 
 ##################################################
 # HEAT MAP
 ##################################################
-
+'''
 w = np.flip(w)
-
-# k and w values for plotting
 X, Y = np.meshgrid(k, w)
 
 # The Spectrum
@@ -155,3 +227,4 @@ add_noise(Z)
 z_width = Z[0].size
 z_height = int(Z.size / z_width)
 kf_index = k_as_index(kf)
+'''
