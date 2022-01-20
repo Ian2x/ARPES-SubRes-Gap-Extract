@@ -16,7 +16,6 @@ plt.colorbar(im)
 plt.plot(k, trajectory_form(k, initial_a_estimate, initial_c_estimate, initial_dk_estimate))
 plt.show()
 
-
 # fit_data = np.zeros((len(w), len(k)))
 # for i in range(len(k)):
 #     ki = k[i]

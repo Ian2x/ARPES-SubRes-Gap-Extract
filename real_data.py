@@ -24,7 +24,8 @@ plt.show()
 # 0289 --> 0333
 # /Users/ianhu/Desktop/ARPES Shared Data/X20141210_far_off_node/OD50_0289_nL.dat
 
-Eugen_data_file = open(r"/Users/ianhu/Documents/ARPES/ARPES Shared Data/X20141210_far_off_node/OD50_0333_nL.dat", "r")
+# Eugen_data_file = open(r"/Users/ianhu/Documents/ARPES/ARPES Shared Data/X20141210_far_off_node/OD50_0333_nL.dat", "r")
+Eugen_data_file = open(r"OD50_0333_nL.dat", "r")
 
 Eugen_data_file.readline() # skip blank starting line
 temp = Eugen_data_file.readline() # energy?
