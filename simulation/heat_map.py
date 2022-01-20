@@ -1,6 +1,6 @@
 from functools import *
 
-from general_functions_and_constants import *
+from general_funcs_and_consts import *
 import matplotlib.pyplot as plt
 import lmfit
 import scipy.optimize
@@ -24,25 +24,16 @@ kf = 0.4
 # Normal-state Dispersion Variables (ak^2+c)
 true_c = -1000  # min(-50*dk, -50) # typically -1000 to -10,000 mev
 true_a = -true_c / (kf ** 2)
-# ------------------------------------------------
+
 # [Energy pixel step size]
 w_step = 1
+
 # [Energy detectors array]
 w = np.arange(-125, 50, w_step)
-
 
 # w: (-45, 20), k: (-0.0125, 0.125)
 # w: (-100, 40), k: (-0.03, 0.025)
 # w: (-400, 0), k: (-0.05, 0.025)
-
-def w_as_index(input_w, w):
-    '''
-    Convert w in meV to corresponding index
-    :param input_w: w to convert
-    :param w: energy array
-    :return: index in w corresponding to input_w
-    '''
-    return int(round((input_w - min(w)) / (max(w) - min(w)) * (w.size - 1)))
 
 
 # [Angle uncertainty]: typically 0.1-0.2 degrees, using 0.045 degrees here
@@ -55,16 +46,6 @@ k_step = (1 / hbar) * math.sqrt(2 * mass_electron / speed_light / speed_light * 
 # [Momentum detectors array]
 k = np.arange(kf - 0.04 * kf, kf + 0.04 * kf, k_step)
 print("k_step: " + str(k_step) + " | mink: " + str(min(k)) + " | maxk: " + str(max(k)) + " | #steps: " + str(k.size))
-
-
-def k_as_index(input_k, k=k):
-    '''
-    Convert k in A^-1 to corresponding index
-    :param input_k: k to convert
-    :param k: momentum array
-    :return: index in k corresponding to input_k
-    '''
-    return int(round((input_k - min(k)) / (max(k) - min(k)) * (k.size - 1)))
 
 
 ##################################################
@@ -126,6 +107,7 @@ def v(k, a, c, dk):
     :return: value
     '''
     return 1 - u(k, a, c, dk)
+
 
 v_vectorized = np.vectorize(v)
 
@@ -211,6 +193,7 @@ def norm_state_I(k, w):
     :return: value
     '''
     return energy_convolution_map(k, w, norm_state_Io_n_A_BCS, R_vectorized, scaleup_factor)
+
 
 ##################################################
 # HEAT MAP

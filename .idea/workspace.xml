@@ -5,13 +5,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3e78887e-61d2-4035-a5ce-1643cb35cd91" name="Default Changelist" comment="CURRENT ERROR:&#10;TypeError: __array__() takes 1 positional argument but 2 were given">
-      <change afterPath="$PROJECT_DIR$/extract_Tscale_by_EDCs.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/EDC_funcs.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/control_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/control_panel.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/extract_gap_by_trajectory.py" beforeDir="false" afterPath="$PROJECT_DIR$/extract_ac_by_trajectory.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/general_functions_and_constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/general_functions_and_constants.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/heat_map_setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/heat_map_setup.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/control_panel.py" beforeDir="false" afterPath="$PROJECT_DIR$/simulation/control_panel.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/extract_Tscale_by_EDCs.py" beforeDir="false" afterPath="$PROJECT_DIR$/extract_Tscale_by_EDCs.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/extract_ac_by_trajectory.py" beforeDir="false" afterPath="$PROJECT_DIR$/extract_ac_by_trajectory.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/general_functions_and_constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/general_funcs_and_consts.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/heat_map_setup.py" beforeDir="false" afterPath="$PROJECT_DIR$/simulation/heat_map.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/gold_reference.py" beforeDir="false" afterPath="$PROJECT_DIR$/old/gold_reference.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/old/normal_state_dispersion.py" beforeDir="false" afterPath="$PROJECT_DIR$/old/normal_state_dispersion.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/real_data.py" beforeDir="false" afterPath="$PROJECT_DIR$/real_data.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -60,11 +63,12 @@
       <recent name="$PROJECT_DIR$" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/simulation" />
       <recent name="$PROJECT_DIR$" />
       <recent name="$PROJECT_DIR$/old" />
     </key>
   </component>
-  <component name="RunManager">
+  <component name="RunManager" selected="Python.main">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
       <module name="ARPES-SubRes-Gap-Extract" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -79,6 +83,28 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="true" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="extract_ac_by_trajectory" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
+      <module name="ARPES-SubRes-Gap-Extract" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/extract_ac_by_trajectory.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="true" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -166,7 +192,18 @@
       <workItem from="1638751146162" duration="1199000" />
       <workItem from="1639087836934" duration="85000" />
       <workItem from="1639360761893" duration="605000" />
-      <workItem from="1640219649446" duration="14637000" />
+      <workItem from="1640219649446" duration="24843000" />
+      <workItem from="1640621624804" duration="17257000" />
+      <workItem from="1640808764693" duration="2000" />
+      <workItem from="1640833217216" duration="5463000" />
+      <workItem from="1640917741959" duration="5969000" />
+      <workItem from="1641083616219" duration="278000" />
+      <workItem from="1641259692721" duration="12792000" />
+      <workItem from="1641496045416" duration="901000" />
+      <workItem from="1641532845868" duration="11278000" />
+      <workItem from="1641781717989" duration="11074000" />
+      <workItem from="1642541963859" duration="810000" />
+      <workItem from="1642543209243" duration="2022000" />
     </task>
     <task id="LOCAL-00001" summary="8/13/21">
       <created>1628910228387</created>
@@ -238,7 +275,14 @@
       <option name="project" value="LOCAL" />
       <updated>1637812964991</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="12/23 checkpoint">
+      <created>1640307202877</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1640307202877</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -270,7 +314,8 @@
     <option name="LAST_COMMIT_MESSAGE" value="12/23 checkpoint" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/ARPES_SubRes_Gap_Extract$main.coverage" NAME="main Coverage Results" MODIFIED="1640304306668" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ARPES_SubRes_Gap_Extract$extract_ac_by_trajectory.coverage" NAME="extract_ac_by_trajectory Coverage Results" MODIFIED="1640309570936" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/ARPES_SubRes_Gap_Extract$main.coverage" NAME="main Coverage Results" MODIFIED="1642547848328" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/ARPES_2$main.coverage" NAME="main Coverage Results" MODIFIED="1631146526567" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

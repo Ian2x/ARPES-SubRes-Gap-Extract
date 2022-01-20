@@ -1,6 +1,4 @@
-import math
-from general_functions_and_constants import *
-from heat_map_setup import *
+from simulation.heat_map import *
 # build normal state dispersion map
 thickness_sigma = 2
 def A_e(k,w):

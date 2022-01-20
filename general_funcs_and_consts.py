@@ -1,4 +1,4 @@
-from control_panel import *
+from simulation.control_panel import *
 
 import numpy as np
 import math
@@ -13,6 +13,7 @@ mass_electron = 5.1100 * 10 ** 8  # mev/c^2
 speed_light = 2.998 * 10 ** 8  # m/s
 
 ONE_BILLION = 1000000000
+
 
 # Gaussian Function
 def R(dw, sigma):
@@ -119,13 +120,12 @@ def n(w, uP=0, temp=20.44):
     # Boltzmann's constant (meV/K)
     kB = 8.617333262 * 10 ** (-2)
     # h-bar: 6.582 * 10 ** (-13) (mev*s) # (Implicit bc already expressing energy)
-    if w > 50: return 0 # Rounding approximation
+    if w > 50: return 0  # Rounding approximation
     if w < -50: return 1
     return 1 / (math.exp((w - uP) / kB / temp) + 1)
 
 
 n_vectorized = np.vectorize(n)
-
 
 
 def secondary_electron_contribution_array(w_array, p, q, r, s):
@@ -158,7 +158,7 @@ def manualRedChi(data, fit, absSigmaSquared, DOF=1):
     :return: reduced chi value (1 is good, >1 is bad, <1 is overfit)
     '''
     res = 0
-    for i in range(data.size):
+    for i in range(len(data)):
         res += (data[i] - fit[i]) ** 2 / absSigmaSquared[i]
     return res / DOF
 
@@ -217,7 +217,17 @@ def lorentz_form(x, a, b, c, d):
     :param d: vertical shift
     :return: Lorentz with vertical shift evaluated at input
     '''
+
     return a * c / ((x - b) ** 2 + c ** 2) + d
+
+
+def lorentz_form_w_secondary_electrons(x, a, b, c, p, q, r, s):
+    lorentz = lorentz_form(x, a, b, c, 0)
+    secondary = secondary_electron_contribution_array(x, p, q, r, s)
+    output = np.zeros(len(x))
+    for i in range(len(x)):
+        output[i] = lorentz[i] + secondary[i]
+    return output
 
 
 def parabola(x, a, b, c):
@@ -229,3 +239,43 @@ def parabola(x, a, b, c):
     :return:
     '''
     return a * (x - b) ** 2 + c
+
+
+def w_as_index(input_w, w):
+    '''
+    Convert w in meV to corresponding index
+    :param input_w: w to convert
+    :param w: energy array
+    :return: index in w corresponding to input_w
+    '''
+    return int(round((input_w - min(w)) / (max(w) - min(w)) * (w.size - 1)))
+
+
+def k_as_index(input_k, k):
+    '''
+    Convert k in A^-1 to corresponding index
+    :param input_k: k to convert
+    :param k: momentum array
+    :return: index in k corresponding to input_k
+    '''
+    return int(round((input_k - min(k)) / (max(k) - min(k)) * (k.size - 1)))
+
+
+def d4_polynomial(x, a, b, c, d):
+    return a * x ** 3 + b * x ** 2 + c * x + d
+
+
+def d5_polynomial(x, a, b, c, d, e):
+    return a * x ** 4 + b * x ** 3 + c * x ** 2 + d * x + e
+
+
+def d6_polynomial(x, a, b, c, d, e, f):
+    return a * x ** 5 + b * x ** 4 + c * x ** 3 + d * x ** 2 + e * x + f
+
+
+def d7_polynomial(x, a, b, c, d, e, f, g):
+    return a * x ** 6 + b * x ** 5 + c * x ** 4 + d * x ** 3 + e * x ** 2 + f * x + g
+
+
+def d10_polynomial(x, a, b, c, d, e, f, g, h, i, j):
+    return a * x ** 9 + b * x ** 8 + c * x ** 7 + d * x ** 6 + e * x ** 5 + f * x ** 4 + g * x ** 3 + h * x ** 2 + i * x + j

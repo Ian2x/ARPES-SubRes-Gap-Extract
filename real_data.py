@@ -1,5 +1,4 @@
-from heat_map_setup import *
-
+from simulation.heat_map import *
 '''
 shared_drive_data_file = open(r"/Users/ianhu/Downloads/OD50#9_0311.txt", "r")
 shared_drive_data = np.zeros((201, 700))
@@ -27,7 +26,7 @@ plt.show()
 
 Eugen_data_file = open(r"/Users/ianhu/Documents/ARPES/ARPES Shared Data/X20141210_far_off_node/OD50_0333_nL.dat", "r")
 
-temp = Eugen_data_file.readline() # skip blank starting line
+Eugen_data_file.readline() # skip blank starting line
 temp = Eugen_data_file.readline() # energy?
 temp_split = temp.split()
 
@@ -41,9 +40,9 @@ for i in range(w_dim):
     w[i] = float(temp_split[i]) * 1000
 w = np.flip(w)
 
-temp = Eugen_data_file.readline() # empty 0.0164694505526385 / 0.515261371488587
-temp = Eugen_data_file.readline() # unfilled 0.513745070571566 (FOR FAR OFF NODE ONLY)
-temp = Eugen_data_file.readline() # unfilled 0.512228769654545 (FOR FAR OFF NODE ONLY)
+Eugen_data_file.readline() # empty 0.0164694505526385 / 0.515261371488587
+Eugen_data_file.readline() # unfilled 0.513745070571566 (FOR FAR OFF NODE ONLY)
+Eugen_data_file.readline() # unfilled 0.512228769654545 (FOR FAR OFF NODE ONLY)
 
 for i in range(k_dim):
     temp = Eugen_data_file.readline()
@@ -61,14 +60,15 @@ plt.show()
 # 250, 100, 20, 260 for near node
 # 60, 100, 30, 340 for far off node
 z_height = 70 # from 110
-z_width = 112
+z_width = 106
 height_offset = 40 # from 0
-width_offset = 305
+width_offset = 311
 
 temp_k = np.zeros(z_width)
 temp_w = np.zeros(z_height)
 
 Z = np.zeros((z_height, z_width))
+
 for i in range(z_height):
     temp_w[i] = w[i + height_offset]
     for j in range(z_width):
@@ -82,33 +82,7 @@ Z = np.around(Z)
 k = temp_k
 w = temp_w
 
-energy_conv_sigma = 8
+energy_conv_sigma = 8 / 2.35482004503
 
-'''
-fermi_energy_index=None
-curr_distance_to_fermi_energy = np.inf
-for i in range(len(w)):
-    if math.fabs(w[i]) < curr_distance_to_fermi_energy:
-        curr_distance_to_fermi_energy = math.fabs(w[i])
-        fermi_energy_index = i
-
-fermi_mdc = Z[fermi_energy_index+5]
-plt.plot(k, fermi_mdc)
-
-def mirrored_lorentz(x, a, b, c, d):
-    return lorentz_form(x, a, b, c) + lorentz_form(x, a, -b, c) + d
-
-fermi_energy_kf_extraction_params, fermi_energy_kf_extraction_pcov = scipy.optimize.curve_fit(mirrored_lorentz, k, fermi_mdc, bounds=([0, 0, 0, 0],[np.inf, 0.2, 0.3, 200]))
-
-print("MIRRORED LORENTZ - TRY TO EXTRACT KF")
-print(fermi_energy_kf_extraction_params)
-print(fermi_energy_kf_extraction_params[1])
-
-plt.plot(k, mirrored_lorentz(k, *fermi_energy_kf_extraction_params))
-plt.show()
-'''
-invZ = np.array([list(i) for i in zip(*Z)])
-
-plt.plot(w, invZ[56])
-plt.show()
-quit()
+inv_Z = np.array([list(i) for i in zip(*Z)])
+print(w)
